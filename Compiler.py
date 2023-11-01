@@ -30,10 +30,10 @@ def pl( lst ):
 	for i in lst:
 		print( i )
 
-import basecpuinf
+import BaseCPUInfo
 
 import math 
-import bm 
+import BasicMath as bm
 import warnings
 
 ##########################################################
@@ -44,10 +44,10 @@ import warnings
 show_adv_inf = "no"
 
 #Get Basic Info about Simulated CPU and Folders
-bw = basecpuinf.bit_width
-bf = basecpuinf.base_folder
-pf = basecpuinf.programs_folder
-exeff = basecpuinf.executable_files_folder
+bw = BaseCPUInfo.bit_width
+bf = BaseCPUInfo.base_folder
+pf = BaseCPUInfo.programs_folder
+exeff = BaseCPUInfo.executable_files_folder
 
 function_names = [
 	"declare",	#0

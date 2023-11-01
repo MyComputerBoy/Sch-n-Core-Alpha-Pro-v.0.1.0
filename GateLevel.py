@@ -5,7 +5,7 @@
 
 import BaseCPUInfo
 import math as m
-import bm
+import BasicMath
 
 bw = BaseCPUInfo.bit_width
 

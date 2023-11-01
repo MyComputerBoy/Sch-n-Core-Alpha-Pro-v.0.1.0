@@ -18,11 +18,11 @@ comp(filename: str, dest_name: str) -> Function to call for assembly of filename
 #Schön Assembler for Schön Core Delta v.0.5.0
 
 
-import basecpuinf
+import BaseCPUInfo
 
 import importlib as il 
 import math 
-import bm 
+import BasicMath as bm
 
 ##########################################################
 #Show advanced infomation
@@ -32,10 +32,10 @@ import bm
 show_adv_inf = "no"
 
 #Get Basic Info about Simulated CPU and Folders
-bw = basecpuinf.bit_width
-bf = basecpuinf.base_folder
-pf = basecpuinf.programs_folder
-exeff = basecpuinf.executable_files_folder
+bw = BaseCPUInfo.bit_width
+bf = BaseCPUInfo.base_folder
+pf = BaseCPUInfo.programs_folder
+exeff = BaseCPUInfo.executable_files_folder
 
 class CustomException(Exception):
 	pass

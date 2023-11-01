@@ -22,11 +22,16 @@ run(filename, gui=False, print_line_nr=False, force_show_exceptions=False,time_r
 #Import libraries
 import BaseCPUInfo				#Basic CPU information
 import math
-import BasicMath				#Basic math library
+import BasicMath as bm				#Basic math library
 import GateLevel as g
 import importlib as il
 import time
 import logging as lgn			#Logging for custom exceptions
+from enum import Enum
+
+lgn.basicConfig(format="%(levelname)s: %(message)s", level=lgn.DEBUG)
+
+lgn.debug("Imported libraries.")
 
 #Basic CPU info variables
 bw = BaseCPUInfo.bit_width
@@ -54,17 +59,44 @@ def initialize_rom(Filename: str):
 		q = line.strip()
 		rom_data[i] = [int(j) for j in q]
 
+#RAM emulated through huge list
 ramv = [
-
 	bz for i in range(1024)	#Random Access Memory, emulated 1024, but is capable of 4.294.967.296
-
 ]
 
+class ReadWrite(Enum):
+	READ = 0
+	WRITE = 1
+
+class RegType(Enum):	#Register types enum
+	GENERALPURPOSE = 0
+	ALU = 1
+	STACK = 2
+	PROTECTED = 3
+
+class ProtReg(Enum):	#Protected register enum
+	PROGRAMCOUNTER = 0
+	ENABLELIST = 1
+	SETLIST = 2
+	AOR = 3
+	FLAGS = 4
+	CONTROLUNITINPUT = 5
+
+class ALUConfig(Enum):
+	PROGRAMCOUNTERINCREMENT = 0
+	ALUFUNCTION = 1
+	ENABLEAOR = 2
+	SETAOR = 3
+	INCREMENT = 3
+	DECREMENT = 4
+	SPECIALFUNCTION = 6
+	SETFLAGS = 7
+
+#Internal registers emulated as list of lists
 regs = [
 	[bz for i in range(32)],	#General Purpose Registers
 	[bz for i in range(32)],	#Arithmetic/Logic Unit Registers
 	[bz for i in range(32)],	#Stack Pointers
-	[bz for i in range(32)],	#Interrup Stack Pointers
 	[bz for i in range( 8)],	#Special Purpose Internal CU Register
 ]
 
@@ -80,7 +112,7 @@ def buf(rw, list=bz):
 	
 	buffer = list
 
-def rom( rw, index, list = [] ):
+def rom(rw, index, list = [] ):
 	global rom_data
 	if rw == 1:
 		return 
@@ -122,6 +154,12 @@ def reg(rw, index, reg_type, value=None, preset=None):
 	Returns: binary word
 	"""
 	global regs
+	if isinstance(rw, ReadWrite):		#Read write enum
+		rw = rw.value
+	if isinstance(reg_type, RegType):	#Register type enum
+		reg_type = reg_type.value
+	if isinstance(index, ProtReg):		#Protected register enum
+		index = index.value
 	if rw == 0:
 		return regs[reg_type][index]
 	if not isinstance(preset,type(None)):
@@ -131,21 +169,18 @@ def reg(rw, index, reg_type, value=None, preset=None):
 	return
 
 #Further basic CPU info variables
-ena_list = reg(0, 2, 4, bz)
-set_list = reg(0, 1, 4, bz)
+ena_list = reg(0, ProtReg.ENABLELIST, RegType.PROTECTED, bz)
+set_list = reg(0, ProtReg.SETLIST, RegType.PROTECTED, bz)
 
+#----------------------------------------------------------
+#Update ALU test for improved testing
 #Test ALU
-try:
-	if set_list[8] == 1:
-		tmp = buf(0)
-		reg(1, 0, 1, tmp)
-
-	if ena_list[1] == 1:
-		var = reg(0, 1, 1, 0)
-		buf(1, var)
-except Exception:
-	lgn.critical("Internal ALU could not be initialized")
-	print("Internal ALU: -1")
+# try:
+	
+	# lgn.debug("ALU tested.")
+# except Exception:
+	# lgn.critical("Internal ALU could not be initialized")
+	# print("Internal ALU: -1")
 
 #Setup ALU
 ################################################
@@ -156,18 +191,18 @@ def alu():		#//Update for new ALU
 	Returns: return code: 1 for function completed succesfully or passes any errors
 	"""
 	global reg
-	spec_func_var = reg(0, 6, 4)
-	ena_list = reg(0, 2, 4)
-	set_list = reg(0, 1, 4)
-	ln = reg(0, 0, 4)
+	spec_func_var = reg(ReadWrite.READ, ProtReg.ALUSPECIALFUNCTION, RegType.PROTECTED)
+	ena_list = reg(ReadWrite.READ, ProtReg.ENABLELIST, RegType.PROTECTED)
+	set_list = reg(ReadWrite.READ, ProtReg.SETLIST, RegType.PROTECTED)
+	ln = reg(ReadWrite.READ, ProtReg.PROGRAMCOUNTER, RegType.PROTECTED)
 	num_a = buf(0)
 	
-	if ena_list[2] == 0:
+	if ena_list[ALUConfig.PROGRAMCOUNTERINCREMENT] == 0:
 		num_b = reg(0, 0, 1)
 	else:
 		num_b = bm.dtb(1)
 	
-	func = reg(0, 2, 1)
+	func = reg(ReadWrite.READ, ALUConfig.ALUFUNCTION, RegType.ALU)
 	tmp = [0 for i in range(4)]
 	for i in range(4):
 		tmp[i] = func[i]
@@ -210,9 +245,10 @@ def alu():		#//Update for new ALU
 		raise Exception
 	
 	comp.append(co)
-	reg(1, 1, 1, q)
-	if set_list[7] == 1:
-		reg(1, 3, 1, comp)
+	reg(ReadWrite.WRITE, ProtReg.AOR, RegType.PROTECTED, q)
+	if set_list[ALUConfig.SETFLAGS] == 1:
+		reg(ReadWrite.WRITE, ProtReg.FLAGS, RegType.PROTECTED, comp)
+	lgn.debug("ALU succesfully run.")
 	return 1
 
 #Setup Processor
@@ -299,6 +335,7 @@ def cls(r=0, g=0, b=0):
 			for j, _ in enumerate(regs[i]):
 				regs[i][j] = bz
 		clear_reg_offs()
+	lgn.debug("Cleared Registers.")
 
 def clear_reg_offs():
 	global reg_offs
@@ -477,12 +514,12 @@ FunctionDefinitions = [
 #Set Set Pins
 #pci, pc, cb, aor, rama, ramd, roma, gpioa, gpiod, flg, pid, reg_a, reg_b, reg_c, cui, sp, ism, if
 def set(list):		
-	reg(1, 1, 4, list)
+	reg(ReadWrite.WRITE, ProtReg.SETLIST, RegType.PROTECTED, list)
 
 #Set Enable Pins
 #pci, pc, aor, inc, decrement, ramd, romd, pid, reg_a, reg_b, reg_c, sp, ism, if
 def enable(list):		
-	reg(1, 2, 4, list)
+	reg(ReadWrite.WRITE, ProtReg.ENABLELIST, RegType.PROTECTED, list)
 
 def sr(lst, comp, var_a=[0]):	#Should Run?
 	for i, e in enumerate(lst):
@@ -642,7 +679,7 @@ def execute(set_list, ena_list, gui=False,
 		stack(1, reg_a[0], reg_a[1], var_e)
 
 #Run Single Instruction
-def single_instruction(r=0, gui=False, 
+def single_instruction(reset=0, gui=False, 
 					   print_line_nr=False, 
 					   force_show_exceptions=False):
 	"""single_instruction(r=0,gui=False, print_line_nr=False, force_show_exceptions=False) -> Runs a single instruction
@@ -660,20 +697,22 @@ def single_instruction(r=0, gui=False,
 	"""
 	global reg
 	
-	if r == 1:	#Reset
+	#Handle reset
+	if reset == 1:	#Reset
 		cls(1,1,1)
+		lgn.debug("Cleared registers")
 		return 0
 	
-	#Run instruction
-	ln = reg(0, 0, 4)
+	#Get program counter, mainly for debugging
+	ln = reg(ReadWrite.READ, ProtReg.PROGRAMCOUNTER, RegType.PROTECTED)
 	
-	reg(1, 2, 1, bz)
+	# reg(ReadWrite.WRITE, ALUConfig., RegType.ALU, bz)
 	
 	#fetch next instruction 
 	for i, _ in enumerate(fetch[0]):
 		execute(fetch[0][i], fetch[1][i])
 	clear_reg_offs()
-	inp = reg(0, 5, 4)
+	inp = reg(ReadWrite.READ, ProtReg.CONTROLUNITINPUT, RegType.PROTECTED)
 	
 	if print_line_nr:
 		print("ln: %s, %s" % (bm.btd(ln),bm.blts(inp)))
@@ -685,9 +724,10 @@ def single_instruction(r=0, gui=False,
 			exit_signal = False
 			break
 	if exit_signal:
+		lgn.debug("EXIT_SIGNAL.")
 		return 1
 		
-	comp = reg(0, 3, 1)
+	comp = reg(ReadWrite.READ, ProtReg.AOR, RegType.PROTECTED)
 	
 	#get input variables
 	#Where the different variables start in input space
@@ -746,8 +786,8 @@ def single_instruction(r=0, gui=False,
 	
 	#logic 
 	if inp[4] == 1:		#if the function is an alu operation
-		reg(1, 2, 1, func)
-		reg(1, 6, 4, var_a)
+		reg(ReadWrite.WRITE, ALUConfig.ALUFUNCTION, RegType.ALU, func)
+		reg(ReadWrite.WRITE, ProtReg.ALUSPECIALFUNCTION, RegType.PROTECTED, var_a)
 		for i, _ in enumerate(alu_descr[0]):
 			execute(alu_descr[0][i], 
 					alu_descr[1][i], 
@@ -792,7 +832,7 @@ def single_instruction(r=0, gui=False,
 				t_func_descr[1][0][i], 
 				gui, reg_a, reg_b)
 	clear_reg_offs()
-	comp = reg(0, 3, 1)
+	comp = reg(ReadWrite.READ, ProtReg.FLAGS, RegType.ALU)
 	
 	
 	if sr(var_c, comp) or var_a[0]:
@@ -834,12 +874,8 @@ def run(filename, gui=False, print_line_nr=False,
 		return -1
 	
 	#Setup cpu sattelite files for executions 
-	reg(1, 5, 4, bz)
-	single_instruction(1)
-	fh = open(bf + "rom/fn.txt", "w")
-	fh.write(filename)
-	fh.close()
-	il.reload(roml)
+	reg(ReadWrite.WRITE, ProtReg.CONTROLUNITINPUT, RegType.PROTECTED, bz)
+	single_instruction(reset=1)
 	initialize_rom()
 	if time_runtime:
 		start_time = time.time()

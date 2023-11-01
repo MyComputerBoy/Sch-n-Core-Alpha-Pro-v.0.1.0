@@ -4,7 +4,7 @@
 import BaseCPUInfo
 
 import math as m 
-import stdn_gate as g 
+import GateLevel as g 
 
 bw = BaseCPUInfo.bit_width
 
