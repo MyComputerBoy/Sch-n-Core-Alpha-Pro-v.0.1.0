@@ -631,8 +631,6 @@ def execute(set_list, ena_list, gui=False,
 	var = bz
 	
 	#Enable actions:
-	if ena_list[0]:		#Increment program counter
-		pass
 	if ena_list[1]:		#pc
 		var = reg(ReadWrite.READ, ProtReg.PROGRAMCOUNTER, RegType.PROTECTED)
 	if ena_list[1]:		#aor 
@@ -661,7 +659,7 @@ def execute(set_list, ena_list, gui=False,
 		var = stack(0, reg_a[0], reg_a[1], reg_c[0])
 	
 	buf(1,var)
-	# print("\nBUFFER:%s\n" % (bm.blts(var)))
+	# lgn.debug("BUFFER:%s" % (bm.blts(var)))
 	
 	#Set actions:
 	if set_list[0] == 1:	#pc
@@ -681,10 +679,7 @@ def execute(set_list, ena_list, gui=False,
 	if set_list[5] == 1:	#gpoa
 		pr(var, gui)
 	if set_list[6] == 1:	#gpod
-		print("")
-		print("OUTPUT: " + str(bm.btd(var)))
-	if set_list[7] == 1:	#flg
-		pass
+		lgn.debug("GPOD: %s" % (bm.blts(var)))
 	if set_list[8] == 1:	#airb
 		reg(ReadWrite.WRITE, 0, 1, var)
 	if set_list[9] == 1:	#rega
@@ -697,15 +692,12 @@ def execute(set_list, ena_list, gui=False,
 		reg(ReadWrite.WRITE, 5, 4, var)
 	if set_list[13] == 1:	#rarb
 		pass
-		# rar(ReadWrite.WRITE, reg_b[0], reg_b[1], var)
 	if set_list[14] == 1:	#incr_rega
 		reg_offs[0][reg_a[0]] += 1
 	if set_list[15] == 1:	#incr_regb
 		reg_offs[1][0] += 1
 	if set_list[16] == 1:	#set_temp_reg
 		reg(ReadWrite.WRITE, 7, 4, buf)
-	# if set_list[17] == 1:	#stack pop/push
-		# stack(1, reg_a[0], reg_a[1], var_e)
 
 #Run Single Instruction
 def single_instruction(reset=0, gui=False, 
