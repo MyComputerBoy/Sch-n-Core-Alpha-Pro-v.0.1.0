@@ -324,18 +324,17 @@ set_address = [
 
 #Clear Registers
 def cls(r=0, g=0, b=0):
-	rll, rlw = raml.gl()
 	if b == 1:
 		buf(1, bz)
 	if r == 1:
-		for i in range(rll-1):
-			ram(1, i, "CLS()", bz)
+		ramv = [
+			bz for i in range(1024)
+		]
 	if g == 1:
 		for i, _ in enumerate(regs):
 			for j, _ in enumerate(regs[i]):
 				regs[i][j] = bz
 		clear_reg_offs()
-	lgn.debug("Cleared Registers.")
 
 def clear_reg_offs():
 	global reg_offs
@@ -736,49 +735,10 @@ def single_instruction(reset=0, gui=False,
 	#Length of variables 
 	var_lengs = [4,1,1,4,2,2,7,7,7]
 	
-	#Create variables according to lengths
-	func  = [0 for i in range(var_lengs[0])]
-	var_a = vab = [0 for i in range(var_lengs[1])]
-	var_b = vbb = [0 for i in range(var_lengs[2])]
-	var_c = vcb = [0 for i in range(var_lengs[3])]
-	var_d = vdb = [0 for i in range(var_lengs[4])]
-	var_e = veb = [0 for i in range(var_lengs[5])]
-	reg_a = [0 for i in range(var_lengs[6])]
-	reg_b = [0 for i in range(var_lengs[7])]
-	reg_c = [0 for i in range(var_lengs[8])]
-	
-	#Populate variables according to offsets and lengths
-	for i, e in enumerate( func):
-		func[ i] = inp[i + var_ofs[0]]
-	for i, e in enumerate(var_a):
-		var_a[i] = vab[i] = inp[i + var_ofs[1]]
-	for i, e in enumerate(var_b):
-		var_b[i] = vbb[i] = inp[i + var_ofs[2]]
-	for i, e in enumerate(var_c):
-		var_c[i] = vcb[i] = inp[i + var_ofs[3]]
-	for i, e in enumerate(var_d):
-		var_d[i] = vdb[i] = inp[i + var_ofs[4]]
-	for i, e in enumerate(var_e):
-		var_e[i] = veb[i] = inp[i + var_ofs[5]]
-	for i, e in enumerate(reg_a):
-		reg_a[i] = inp[i + var_ofs[6]]
-	for i, e in enumerate(reg_b):
-		reg_b[i] = inp[i + var_ofs[7]]
-	for i, e in enumerate(reg_c):
-		reg_c[i] = inp[i + var_ofs[8]]
-	
-	#convert input to ints then to registers 
-	reg_a_int = bm.btd(reg_a)
-	reg_b_int = bm.btd(reg_b)
-	reg_c_int = bm.btd(reg_c)
-	
-	#Convert ints to register format, or [all but lower 2 bits removed as int,2 lower bits as int]
-	reg_a = [math.floor((reg_a_int-(reg_a_int%4))/4),
-			 reg_a_int%4]
-	reg_b = [math.floor((reg_b_int-(reg_b_int%4))/4),
-			 reg_b_int%4]
-	reg_c = [math.floor((reg_c_int-(reg_c_int%4))/4),
-			 reg_c_int%4]
+	#Unpack instruction to variables
+	instruction_vars = [
+		[inp[i + var_ofs[j]] for i in range(var_lengs[j]] for _, j in enumerate(var_lengs)
+	]
 	
 	# if inp[4] == 0:
 		# print(bm.blts(inp))
