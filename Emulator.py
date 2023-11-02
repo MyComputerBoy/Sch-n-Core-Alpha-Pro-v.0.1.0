@@ -81,6 +81,9 @@ class ProtReg(Enum):	#Protected register enum
 	AOR = 3
 	FLAGS = 4
 	CONTROLUNITINPUT = 5
+	ROMADDRESS = 6
+	RAMADDRESS = 7
+	REGINTERMEDIATE = 8
 
 class ALUConfig(Enum):
 	PROGRAMCOUNTERINCREMENT = 0
@@ -91,6 +94,11 @@ class ALUConfig(Enum):
 	DECREMENT = 4
 	SPECIALFUNCTION = 6
 	SETFLAGS = 7
+
+class EmulatorRuntimeError(Enum):
+	ALUFAILED = "ALU: Unknown error."
+	ALUNOTINITIATED = "ALU: Couldn't initiate."
+	ILLEGALFUNCTION = "Offset: Illegal function called."
 
 #Internal registers emulated as list of lists
 regs = [
@@ -133,6 +141,10 @@ def ram(rw, index, value=None, preset=None):
 	Returns: binary word
 	"""
 	global ramv
+	
+	if isinstance(rw, ReadWrite)
+		rw = rw.value
+	
 	if rw == 0:
 		return ramv[index]
 	if isinstance(preset,type(None)) == False:
@@ -179,8 +191,8 @@ set_list = reg(0, ProtReg.SETLIST, RegType.PROTECTED, bz)
 	
 	# lgn.debug("ALU tested.")
 # except Exception:
-	# lgn.critical("Internal ALU could not be initialized")
-	# print("Internal ALU: -1")
+	# lgn.critical(EmulatorRuntimeError.ALUNOTINITIATED.value)
+	# return -1
 
 #Setup ALU
 ################################################
@@ -423,89 +435,101 @@ FunctionDefinitions = [
 			[1,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0],	#Initiate branch
 			[0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],	#Branch to @ next word
 		],
-		[	#RETURN FUNCTION-----------
+		[	#RETURN FUNCTION
 			[0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0],	#Pop from stack
 			[0,1,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0],	#PC
 			[0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0],	#Push to stack
 			[0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0],	#RegA
 		],
+		[	#GPIO--------------------
+			[0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0],	#
+			[0,1,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0],	#
+			[0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0],	#
+			[0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0],	#
+		],
 	],
 	
 	[		#Enable pins
 		[	#Fetch
-			[1,1,0,0,0,0,0,0,0,0,0,0,0,0],
-			[0,0,0,0,0,0,1,0,0,0,0,0,0,0],
+			[1,1,0,0,0,0,0,0,0,0,0,0,0,0,0],
+			[0,0,0,0,0,0,1,0,0,0,0,0,0,0,0],
 		],
 		[	#ROM Immediate
-			[1,1,0,0,0,0,0,0,0,0,0,0,0,0],
-			[0,0,0,0,0,0,1,0,0,0,0,0,0,0],
+			[1,1,0,0,0,0,0,0,0,0,0,0,0,0,0],
+			[0,0,0,0,0,0,1,0,0,0,0,0,0,0,0],
 		],
 		[	#ROM At Address At Immediate
-			[1,1,0,0,0,0,0,0,0,0,0,0,0,0],
-			[1,0,0,0,0,0,1,0,0,0,0,0,0,0],
-			[0,0,0,0,0,0,1,0,0,0,0,0,0,0],
+			[1,1,0,0,0,0,0,0,0,0,0,0,0,0,0],
+			[1,0,0,0,0,0,1,0,0,0,0,0,0,0,0],
+			[0,0,0,0,0,0,1,0,0,0,0,0,0,0,0],
 		],
 		[	#RAM At Immediate READ
-			[1,1,0,0,0,0,0,0,0,0,0,0,0,0],
-			[0,0,0,0,0,1,0,0,0,0,0,0,0,0],
+			[1,1,0,0,0,0,0,0,0,0,0,0,0,0,0],
+			[0,0,0,0,0,1,0,0,0,0,0,0,0,0,0],
 		],
 		[	#RAM At Address At Immediate READ
-			[1,1,0,0,0,0,0,0,0,0,0,0,0,0],
-			[0,0,0,0,0,1,0,0,0,0,0,0,0,0],
-			[0,0,0,0,0,1,0,0,0,0,0,0,0,0],
+			[1,1,0,0,0,0,0,0,0,0,0,0,0,0,0],
+			[0,0,0,0,0,1,0,0,0,0,0,0,0,0,0],
+			[0,0,0,0,0,1,0,0,0,0,0,0,0,0,0],
 		],
 		[	#RAM At Immediate WRITE
-			[1,1,0,0,0,0,0,0,0,0,0,0,0,0],
-			[0,0,0,0,0,0,0,0,1,0,0,0,0,0],
+			[1,1,0,0,0,0,0,0,0,0,0,0,0,0,0],
+			[0,0,0,0,0,0,0,0,0,1,0,0,0,0,0],
 		],
 		[	#RAM At Address At Immediate WRITE
-			[1,1,0,0,0,0,0,0,0,0,0,0,0,0],
-			[0,0,0,0,0,1,0,0,0,0,0,0,0,0],
-			[0,0,0,0,0,0,0,0,1,0,0,0,0,0],
+			[1,1,0,0,0,0,0,0,0,0,0,0,0,0,0],
+			[0,0,0,0,0,1,0,0,0,0,0,0,0,0,0],
+			[0,0,0,0,0,0,0,0,0,1,0,0,0,0,0],
 		],
 		[	#REG Swap
-			[0,0,0,0,0,0,0,0,1,0,0,0,0,0],
-			[0,0,0,0,0,0,0,1,0,0,0,0,0,0],
+			[0,0,0,0,0,0,0,0,0,1,0,0,0,0,0],
+			[0,0,0,0,0,0,0,1,0,0,0,0,0,0,0],
 		],
 		[	#REG Clone
-			[0,0,0,0,0,0,0,0,1,0,0,0,0,0],
+			[0,0,0,0,0,0,0,0,0,1,0,0,0,0,0],
 		],
 		[	#STACK PUSH
-			[0,0,0,1,0,0,0,0,0,0,0,1,0,0],
-			[0,0,0,0,0,0,0,0,1,0,0,0,0,0],
-			[0,0,1,0,0,0,0,0,0,0,0,0,0,0],
+			[0,0,0,1,0,0,0,0,0,0,0,0,1,0,0],
+			[0,0,0,0,0,0,0,0,0,1,0,0,0,0,0],
+			[0,0,1,0,0,0,0,0,0,0,0,0,0,0,0],
 		],
 		[	#STACK POP
-			[0,0,0,0,1,0,0,0,0,0,0,1,0,0],
-			[0,0,0,0,0,1,0,0,0,0,0,0,0,0],
-			[0,0,1,0,0,0,0,0,0,0,0,0,0,0],
+			[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0],
+			[0,0,0,0,0,1,0,0,0,0,0,0,0,0,0],
+			[0,0,1,0,0,0,0,0,0,0,0,0,0,0,0],
 		],
 		[	#STACK POINT TO AT REGISTER
-			[0,0,0,0,0,0,0,0,1,0,0,0,0,0],
+			[0,0,0,0,0,0,0,0,0,1,0,0,0,0,0],
 		],
 		[	#STACK GET POINTER
-			[0,0,0,0,0,0,0,0,0,0,0,1,0,0],
+			[0,0,0,0,0,0,0,0,0,0,0,0,1,0,0],
 		],
 		[	#CONDITIONAL
-			[1,1,0,0,0,0,0,0,0,0,0,0,0,0],
-			[0,0,0,0,0,0,1,0,0,0,0,0,0,0],
+			[1,1,0,0,0,0,0,0,0,0,0,0,0,0,0],
+			[0,0,0,0,0,0,1,0,0,0,0,0,0,0,0],
 		],
 		[	#INTERRUPT
-			[0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+			[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
 		],
 		[	#CALL FUNCTION
-			[0,0,0,1,0,0,0,0,0,0,0,1,0,0],	#Push to stack
-			[0,1,0,0,0,0,0,0,0,0,0,0,0,0],	#PC
-			[0,0,1,1,0,0,0,0,0,0,0,0,0,0],	#Push to stack
-			[0,0,0,0,0,0,0,0,1,0,0,0,0,0],	#RegA
-			[1,1,0,0,0,0,0,0,0,0,0,0,0,0],	#Initiate branch
-			[0,0,0,0,0,0,1,0,0,0,0,0,0,0],	#Branch to @ next word
+			[0,0,0,1,0,0,0,0,0,0,0,0,1,0,0],	#Push to stack
+			[0,1,0,0,0,0,0,0,0,0,0,0,0,0,0],	#PC
+			[0,0,1,1,0,0,0,0,0,0,0,0,0,0,0],	#Push to stack
+			[0,0,0,0,0,0,0,0,0,1,0,0,0,0,0],	#RegA
+			[1,1,0,0,0,0,0,0,0,0,0,0,0,0,0],	#Initiate branch
+			[0,0,0,0,0,0,1,0,0,0,0,0,0,0,0],	#Branch to @ next word
 		],
 		[	#RETURN FUNCTION
-			[0,0,0,1,0,0,0,0,0,0,0,1,0,0],	#Pop from stack
-			[0,0,0,0,0,0,0,0,0,0,0,1,0,0],	#PC
-			[0,0,1,1,0,0,0,0,0,0,0,0,0,0],	#Push to stack
-			[0,0,0,0,0,0,0,0,1,0,0,0,0,0],	#RegA
+			[0,0,0,1,0,0,0,0,0,0,0,0,1,0,0],	#Pop from stack
+			[0,0,0,0,0,0,0,0,0,0,0,0,1,0,0],	#PC
+			[0,0,1,1,0,0,0,0,0,0,0,0,0,0,0],	#Push to stack
+			[0,0,0,0,0,0,0,0,0,1,0,0,0,0,0],	#RegA
+		],
+		[	#GPIO
+			[0,0,0,1,0,0,0,0,0,0,0,0,1,0,0],	#
+			[0,0,0,0,0,0,0,0,0,0,0,0,1,0,0],	#
+			[0,0,1,1,0,0,0,0,0,0,0,0,0,0,0],	#
+			[0,0,0,0,0,0,0,0,0,1,0,0,0,0,0],	#
 		],
 	],
 ]
@@ -516,7 +540,7 @@ def set(list):
 	reg(ReadWrite.WRITE, ProtReg.SETLIST, RegType.PROTECTED, list)
 
 #Set Enable Pins
-#pci, pc, aor, inc, decrement, ramd, romd, pid, reg_a, reg_b, reg_c, sp, ism, if
+#pci, pc, aor, inc, decrement, ramd, romd, pid, gpi, reg_a, reg_b, reg_c, sp, ism, if
 def enable(list):		
 	reg(ReadWrite.WRITE, ProtReg.ENABLELIST, RegType.PROTECTED, list)
 
@@ -551,7 +575,7 @@ def ofs(func, var_a, var_b, var_c, var_d):	#Offset
 			tl = bm.bla(tl, var_a)
 		
 		#Debbing info for offset
-		# print("func: %s, OFS: %s" % (t_func_descr_meta[func],bm.blts(tl)))
+		lgn.debug("Function: %s, offset: %s" % (t_func_descr_meta[func], bm.blts(tl)))
 		dtl = bm.btd(tl)
 		
 		i = ofs_array[func]
@@ -564,7 +588,7 @@ def ofs(func, var_a, var_b, var_c, var_d):	#Offset
 		
 	except Exception:
 		lgn.critical("OFS: Invalid parameters for offset, func:{function}, var_a:{vara}, var_b:{varb}, var_c:{vard}".format(function = func, vara = var_a, varb = var_b, vard = var_d))
-		return "error"
+		return EmulatorRuntimeError.ILLEGALFUNCTION
 
 def sa(bool):				#Set Address
 	if not bool:
@@ -603,29 +627,33 @@ def execute(set_list, ena_list, gui=False,
 	var = bz
 	
 	#Enable actions:
-	if ena_list[0] == 1:	#pc 
-		var = reg(0, 0, 4)
-	if ena_list[1] == 1:	#aor 
-		var = reg(0, 1, 1)
-	if ena_list[3] == 1:	#ramd 
-		tmp = reg(0, 3, 4)
-		var = ram(0, bm.btd(tmp), "RAMD ENABLE EXECUTE()")
-	if ena_list[4] == 1:	#romd 
-		tmp = reg(0, 4, 4)
+	if ena_list[0]:		#Increment program counter
+		
+	if ena_list[1]:		#pc
+		var = reg(ReadWrite.READ, ProtReg.PROGRAMCOUNTER, RegType.PROTECTED)
+	if ena_list[1]:		#aor 
+		var = reg(ReadWrite.READ, ALUConfig.ENABLEAOR, RegType.ALU)
+	if ena_list[5]:		#ramd 
+		tmp = reg(ReadWrite.READ, ProtReg.RAMADDRESS, RegType.PROTECTED)
+		var = ram(ReadWrite.READ, bm.btd(tmp), "RAMD ENABLE EXECUTE()")
+	if ena_list[6]:		#romd 
+		tmp = reg(ReadWrite.READ, ProtReg.ROMADDRESS, RegType.PROTECTED)
 		var = rom(0, bm.btd(tmp))
-	if ena_list[5] == 1:	#gpi 
+	if ena_list[7]:		#Register intermediate data
+		var = reg(ReadWrite.READ, ProtReg.REGINTERMEDIATE, RegType.PROTECTED)
+	if ena_list[5]:		#gpi 
 		var = bm.dtb(int(input("Number: ")))
-	if ena_list[6] == 1:	#rega 
-		var = reg(0, reg_a[0]+reg_offs[0][reg_a[0]], reg_a[1])
-	if ena_list[7] == 1:	#regb 
-		var = reg(0, reg_b[0]+reg_offs[1][reg_b[0]], reg_b[1])
-	if ena_list[8] == 1:	#regc
-		var = reg(0, reg_c[0], reg_c[1])
-	if ena_list[9] == 1:	#rara
-		var = rar(0, reg_b[0]+reg_offs[1][reg_b[0]], reg_b[1])
-	if ena_list[10] == 1:	#ena_temp_reg
-		var = reg(0, reg_a[0]+reg_offs[0][reg_a[0]], 4)
-	if ena_list[11] == 1:	#stack pop/push
+	if ena_list[6]:		#rega 
+		var = reg(ReadWrite.READ, reg_a[0]+reg_offs[0][reg_a[0]], reg_a[1])
+	if ena_list[7]:		#regb 
+		var = reg(ReadWrite.READ, reg_b[0]+reg_offs[1][reg_b[0]], reg_b[1])
+	if ena_list[8]:		#regc
+		var = reg(ReadWrite.READ, reg_c[0], reg_c[1])
+	if ena_list[9]:		#rara
+		var = rar(ReadWrite.READ, reg_b[0]+reg_offs[1][reg_b[0]], reg_b[1])
+	if ena_list[10]:	#ena_temp_reg
+		var = reg(ReadWrite.READ, reg_a[0]+reg_offs[0][reg_a[0]], 4)
+	if ena_list[11]:	#stack pop/push
 		var = stack(0, reg_a[0], reg_a[1], reg_c[0])
 	
 	buf(1,var)
@@ -633,22 +661,19 @@ def execute(set_list, ena_list, gui=False,
 	
 	#Set actions:
 	if set_list[0] == 1:	#pc
-		reg(1, 0, 4, var)
+		reg(ReadWrite.WRITE, ProtReg.PROGRAMCOUNTER, RegType.PROTECTED, var)
 	if set_list[1] == 1:	#aor
-		# try:
 		alu_r = alu()
 		if alu_r != 1:
+			lgn.warning(EmulatorRuntimeError.ALUFAILED.value)
 			raise Exception
-		# except:
-			# raise Exception
 	if set_list[2] == 1:	#rama
-		reg(1, 3, 4, var)
+		reg(ReadWrite.WRITE, ProtReg.RAMADDRESS, RegType.PROTECTED, var)
 	if set_list[3] == 1:	#ramd
-		tmp = reg(0, 3, 4)
-		ram(1, bm.btd(tmp), "RAMD SET EXECUTE()", var)
+		tmp = reg(ReadWrite.READ, ProtReg.RAMADDRESS, RegType.PROTECTED)
+		ram(ReadWrite.WRITE, bm.btd(tmp), var)
 	if set_list[4] == 1:	#roma
-		# print("ROMA: %s" % (bm.blts(var)))
-		reg(1, 4, 4, var)
+		reg(ReadWrite.WRITE, ProtReg.ROMADDRESS, RegType.PROTECTED, var)
 	if set_list[5] == 1:	#gpoa
 		pr(var, gui)
 	if set_list[6] == 1:	#gpod
@@ -657,23 +682,23 @@ def execute(set_list, ena_list, gui=False,
 	if set_list[7] == 1:	#flg
 		pass
 	if set_list[8] == 1:	#airb
-		reg(1, 0, 1, var)
+		reg(ReadWrite.WRITE, 0, 1, var)
 	if set_list[9] == 1:	#rega
-		reg(1, reg_a[0]+reg_offs[0][reg_a[0]], reg_a[1], var)
+		reg(ReadWrite.WRITE, reg_a[0]+reg_offs[0][reg_a[0]], reg_a[1], var)
 	if set_list[10] == 1:	#regb
-		reg(1, reg_b[0]+reg_offs[1][reg_b[0]], reg_b[1], var)
+		reg(ReadWrite.WRITE, reg_b[0]+reg_offs[1][reg_b[0]], reg_b[1], var)
 	if set_list[11] == 1:	#regc
-		reg(1, reg_c[0], reg_c[1], var)
+		reg(ReadWrite.WRITE, reg_c[0], reg_c[1], var)
 	if set_list[12] == 1:	#cui
-		reg(1, 5, 4, var)
+		reg(ReadWrite.WRITE, 5, 4, var)
 	if set_list[13] == 1:	#rarb
-		rar(1, reg_b[0], reg_b[1], var)
+		rar(ReadWrite.WRITE, reg_b[0], reg_b[1], var)
 	if set_list[14] == 1:	#incr_rega
 		reg_offs[0][reg_a[0]] += 1
 	if set_list[15] == 1:	#incr_regb
 		reg_offs[1][0] += 1
 	if set_list[16] == 1:	#set_temp_reg
-		reg(1, 7, 4, buf)
+		reg(ReadWrite.WRITE, 7, 4, buf)
 	if set_list[17] == 1:	#stack pop/push
 		stack(1, reg_a[0], reg_a[1], var_e)
 
@@ -699,7 +724,8 @@ def single_instruction(reset=0, gui=False,
 	#Handle reset
 	if reset == 1:	#Reset
 		cls(1,1,1)
-		lgn.debug("Cleared registers")
+		if force_show_exceptions:
+			lgn.debug("Cleared registers")
 		return 0
 	
 	#Get program counter, mainly for debugging
@@ -708,13 +734,13 @@ def single_instruction(reset=0, gui=False,
 	# reg(ReadWrite.WRITE, ALUConfig., RegType.ALU, bz)
 	
 	#fetch next instruction 
-	for i, _ in enumerate(fetch[0]):
-		execute(fetch[0][i], fetch[1][i])
+	for i, _ in enumerate(FunctionDefinitions[0]):
+		execute(FunctionDefinitions[0][0][i], FunctionDefinitions[1][0][i])
 	clear_reg_offs()
 	inp = reg(ReadWrite.READ, ProtReg.CONTROLUNITINPUT, RegType.PROTECTED)
 	
 	if print_line_nr:
-		print("ln: %s, %s" % (bm.btd(ln),bm.blts(inp)))
+		lgn.debug("Program Counter: %s, %s" % (bm.btd(ln), bm.blts(inp)))
 	
 	#if input is all 1s, exit with return code 1
 	exit_signal = True
@@ -723,7 +749,8 @@ def single_instruction(reset=0, gui=False,
 			exit_signal = False
 			break
 	if exit_signal:
-		lgn.debug("EXIT_SIGNAL.")
+		if force_show_exceptions:
+			lgn.debug("EXIT_SIGNAL.")
 		return 1
 		
 	comp = reg(ReadWrite.READ, ProtReg.AOR, RegType.PROTECTED)
@@ -737,8 +764,10 @@ def single_instruction(reset=0, gui=False,
 	
 	#Unpack instruction to variables
 	instruction_vars = [
-		[inp[i + var_ofs[j]] for i in range(var_lengs[j]] for _, j in enumerate(var_lengs)
+		[[inp[i + var_ofs[j]]] for i in range(var_lengs[j])] for _, j in enumerate(var_lengs)
 	]
+	
+	
 	
 	# if inp[4] == 0:
 		# print(bm.blts(inp))
@@ -753,14 +782,15 @@ def single_instruction(reset=0, gui=False,
 					alu_descr[1][i], 
 					gui, reg_a, reg_b, reg_c)
 		clear_reg_offs()
+		if force_show_exceptions:
+			lgn.debug("ALU function done.")
 		return 0
 	
 	#else if the function is a logical operation
 	if func_def[bm.btd(func)] != 1:
 		#try:	
 		_ofs = ofs(bm.btd(func), vab, vbb, vcb, vdb)
-		if _ofs == "error":
-			print("Error: ln %s, error with function parameters, function %s" % (bm.btd(ln), bm.btd(func)))
+		if _ofs == EmulatorRuntimeError.ILLEGALFUNCTION:
 			return -1
 		
 		for i, _ in enumerate(t_func_descr[0][_ofs]):
@@ -836,7 +866,7 @@ def run(filename, gui=False, print_line_nr=False,
 	#Setup cpu sattelite files for executions 
 	reg(ReadWrite.WRITE, ProtReg.CONTROLUNITINPUT, RegType.PROTECTED, bz)
 	single_instruction(reset=1)
-	initialize_rom()
+	initialize_rom(filename)
 	if time_runtime:
 		start_time = time.time()
 	

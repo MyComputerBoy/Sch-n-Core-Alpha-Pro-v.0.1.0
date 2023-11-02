@@ -1,0 +1,96 @@
+def lets
+{
+save letter from 0
+a = 0
+h = 7
+i = 8
+k = 10
+m = 12
+n = 13
+zro = 26
+one = 27
+jsfb = 37
+bool = 1
+if letter == a
+{
+print 0b00100
+print 0b01010
+print 0b01110
+print 0b10001
+print 0b10001
+}
+elif letter == h
+{
+print 0b10001
+print 0b10001
+print 0b11111
+print 0b10001
+print 0b10001
+}
+elif letter == i 
+{
+print 0b11111
+print 0b00100
+print 0b00100
+print 0b00100
+print 0b11111
+}
+elif letter == k
+{
+print 0b10001
+print 0b10010
+print 0b11100
+print 0b10010
+print 0b10001
+}
+elif letter == m
+{
+print 0b10001
+print 0b11011
+print 0b10101
+print 0b10001
+print 0b10001
+}
+elif letter == n
+{
+print 0b10001
+print 0b11001
+print 0b10101
+print 0b10101
+print 0b10011
+}
+elif letter == zro
+{
+print 0b01110
+print 0b10001
+print 0b10001
+print 0b10001
+print 0b01110
+}
+elif letter == one
+{
+print 0b0110
+print 0b0010
+print 0b0010
+print 0b0010
+print 0b0111
+}
+elif letter == jsfb
+{
+print 0b10001
+print 0b11011
+print 0b11111
+print 0b11111
+print 0b01110
+print 0b00100
+}
+print 0
+}
+for 0 38 1 3
+{
+save i from 4
+lets i
+}
+lets 10
+lets 8
+lets 12

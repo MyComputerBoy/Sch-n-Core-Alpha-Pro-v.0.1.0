@@ -1,0 +1,80 @@
+def id
+{
+save a from 0
+save b from 1
+save c from 1
+b = a / b
+c = b * c
+if a == c
+{
+q = 1
+}
+else
+{
+q = 0
+}
+save q to 1
+}
+def remainder
+{
+save a from 0
+save b from 1
+save c from 0
+a = a / b
+a = a * b
+a = c - a
+save a to 1
+}
+def ip
+{
+rq = 1
+save rq to 6
+save n from 0
+save n to 2
+save n to 3
+for 2 null 1 3
+{
+save n from 2
+save i from 4
+id n i
+save q from 1
+t = 1
+if q == t
+{
+rq = 0
+save rq to 6
+break
+}
+}
+save rq from 6
+save rq to 1
+}
+for 3 150 2 7
+{
+save i from 8
+ip i
+save i from 8
+save q from 1
+t = 1
+if q == t 
+{
+print i
+}
+save i from 8
+remainder i 10
+save i from 8
+save q from 1
+t = 3
+n = 3
+if i == n
+{
+t = 0
+}
+elif q == t 
+{
+t = 2
+save i from 8
+i = t + i
+save i to 8
+}
+}
