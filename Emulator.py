@@ -142,7 +142,7 @@ def ram(rw, index, value=None, preset=None):
 	"""
 	global ramv
 	
-	if isinstance(rw, ReadWrite)
+	if isinstance(rw, ReadWrite):
 		rw = rw.value
 	
 	if rw == 0:
@@ -170,7 +170,11 @@ def reg(rw, index, reg_type, value=None, preset=None):
 		rw = rw.value
 	if isinstance(reg_type, RegType):	#Register type enum
 		reg_type = reg_type.value
+	if isinstance(reg_type, ALUConfig):
+		reg_type = reg_type.value
 	if isinstance(index, ProtReg):		#Protected register enum
+		index = index.value
+	if isinstance(index, ALUConfig):
 		index = index.value
 	if rw == 0:
 		return regs[reg_type][index]
@@ -628,7 +632,7 @@ def execute(set_list, ena_list, gui=False,
 	
 	#Enable actions:
 	if ena_list[0]:		#Increment program counter
-		
+		pass
 	if ena_list[1]:		#pc
 		var = reg(ReadWrite.READ, ProtReg.PROGRAMCOUNTER, RegType.PROTECTED)
 	if ena_list[1]:		#aor 
@@ -692,15 +696,16 @@ def execute(set_list, ena_list, gui=False,
 	if set_list[12] == 1:	#cui
 		reg(ReadWrite.WRITE, 5, 4, var)
 	if set_list[13] == 1:	#rarb
-		rar(ReadWrite.WRITE, reg_b[0], reg_b[1], var)
+		pass
+		# rar(ReadWrite.WRITE, reg_b[0], reg_b[1], var)
 	if set_list[14] == 1:	#incr_rega
 		reg_offs[0][reg_a[0]] += 1
 	if set_list[15] == 1:	#incr_regb
 		reg_offs[1][0] += 1
 	if set_list[16] == 1:	#set_temp_reg
 		reg(ReadWrite.WRITE, 7, 4, buf)
-	if set_list[17] == 1:	#stack pop/push
-		stack(1, reg_a[0], reg_a[1], var_e)
+	# if set_list[17] == 1:	#stack pop/push
+		# stack(1, reg_a[0], reg_a[1], var_e)
 
 #Run Single Instruction
 def single_instruction(reset=0, gui=False, 
@@ -734,7 +739,7 @@ def single_instruction(reset=0, gui=False,
 	# reg(ReadWrite.WRITE, ALUConfig., RegType.ALU, bz)
 	
 	#fetch next instruction 
-	for i, _ in enumerate(FunctionDefinitions[0]):
+	for i, _ in enumerate(FunctionDefinitions[0][0]):
 		execute(FunctionDefinitions[0][0][i], FunctionDefinitions[1][0][i])
 	clear_reg_offs()
 	inp = reg(ReadWrite.READ, ProtReg.CONTROLUNITINPUT, RegType.PROTECTED)
@@ -877,7 +882,7 @@ def run(filename, gui=False, print_line_nr=False,
 			if q == 1:
 				if time_runtime:
 					end_time = time.time()
-					print("elapsed time: %s" % (end_time-start_time))
+					lgb.debug("elapsed time: %s" % (end_time-start_time))
 					return [1, end_time-start_time]
 				return 1
 			elif q == -1:
