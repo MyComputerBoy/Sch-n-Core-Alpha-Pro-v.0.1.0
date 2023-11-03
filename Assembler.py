@@ -41,8 +41,8 @@ class CustomException(Exception):
 	pass
 
 function_names = [
-	[	"if", "irar", ],
-	[	"rom", "ram", "reg", "io", "gbl", "rar", ],
+	[	"if" ],
+	[	"rom", "ram", "reg", "stack", "interrupt", "io", ],
 	[	"compute" ],
 	[	"mark",	"else",	"elif",	"pass", ],
 ]
@@ -52,22 +52,21 @@ sei = [ "{", "}", ]
 tfn = [ "to", "from", ]
 #Register names in order
 #General purpose, alu, stack pointers, interrupt, special purpose
-regs = ["gpr","alur","stk","itr","spr"]
+regs = ["gpr","alur","stk","spr"]
 #Jump name
 jump_name = "jump"
 
 function_params = [
 	[	#Setup special parameters, at the moment only if is implemeted, thus only the if operators
 		[	[True], [None], ["jump", ">", "==", ">=", "<", "!=", "<=", "weird", "co", ">c", "==c", ">=c", "<c", "!=c", "<=c"], [True], [None] ],
-		[	[True], [None], ["pass"] ],
 	],
 	[	#Setup general function parameters, True=types of regs, False=to/from, None=nan (copy user input in general), "pass"=stop checking for parameters
 		[	[True], [None], ["pass"] ],								#rom
 		[	[False],[True], [None], ["pass"] ],						#ram
 		[	[True], [None], [False], [True], [None],["pass"] ],		#reg
-		[	["input","output"],[True], [None], ["pass"] ],			#io
-		[	[True], [None], ["pass"] ],								#gbl
-		[	[False], [True], [None], [True], [None],["pass"] ],		#rar
+		[	["push","pop"],[True], [None], ["pass"] ],				#stack
+		[	[True], [None], ["pass"] ],								#interrupt
+		[	[False], [None], [True], [None],["pass"] ],				#io
 	],
 	[	#Setup special device parameters (e.g. ALU)
 		[	[True], [None], ["add","sub","mul","div","and","or","xor","not","shift","","","","","","","compare"],[True],[None],[True],[None],["pass"] ],
@@ -79,23 +78,10 @@ function_params = [
 		[	["pass"] ],
 	],
 ]
-#Function parameter offset for skipped variables
-function_param_offset = [
-	[
-		0, 0,
-	],
-	[
-		1, 0, 0, 0, 0, 0,
-	],
-	[
-		0,
-	],
-]
 #Amount of variables expected
 function_var_amount = [
 	[
-		5,
-		1,
+		1
 	],
 	[
 		2,
@@ -103,7 +89,7 @@ function_var_amount = [
 		5,
 		3,
 		2,
-		5,
+		4,
 	],
 	[
 		[ 7 ],
@@ -373,7 +359,7 @@ def comp( filename: str, dest_name: str ):
 	fh = open( bf + pf + filename )
 	lines = fh.readlines()
 	fh.close()
-	fh = open( bf + exeff + dest_name + ".schonexe5", "w+" )
+	fh = open( bf + exeff + dest_name + ".schonexe1", "w+" )
 	ln_n = 0		#Line number
 	bin_ln = 0		#Binary line number
 	il = 0			#If length
@@ -388,7 +374,6 @@ def comp( filename: str, dest_name: str ):
 		0: {
 		
 				0: [5,6,2,7,8,0,1,3,4,9,10],				#Weird problems with more than expected regs copied, hacked to ignore them
-				1: [0,1,2,3,4,5,6,7,8,9,10],
 		
 			},
 		1: {
@@ -409,8 +394,8 @@ def comp( filename: str, dest_name: str ):
 	
 	}
 	#|var a| |var b| |var d/c| |var d/c| |var e/c| |var e/c|
-	_StaticBinVarLength_ = [ 1,1,4,2,2, 2, 5, 2, 5, 2, 5 ]
-	_StaticBinVarIndex_ = [ 5,6,7,7,9,11,13,18,20,25,27 ]
+	_StaticBinVarLength_ = [ 4, 2, 2, 5, 2, 5, 2, 5 ]
+	_StaticBinVarIndex_ = [ 5, 9, 11, 13, 18, 20, 25, 27 ]
 	
 	for i in lines:
 		if eof in i:
@@ -572,10 +557,6 @@ def comp( filename: str, dest_name: str ):
 							break
 					except Exception:
 						break
-						# pass
-					# fpo = function_param_offset[1][function_names_index]
-					#bin_vars[fpo + i] = bm.dtb( getParIndex( [1,function_names_index,i], vars[i] ), bvl[i + fpo] )
-					# print(vars[i])
 					try:
 						bin_vars.append(bm.dtb( getParIndex( [MainType,function_names_index,i], vars[i] ), bvl[i] ))
 					except Exception:
@@ -625,13 +606,13 @@ def comp( filename: str, dest_name: str ):
 			nextLines[0] = bm.dtb(eofbln + 1 + int(vars[3]))
 			full_binary_function[0] = 1
 			full_binary_function[8] = 1
-		elif func_var == function_names[0][1]:
-			bin_vars = init_bin_vars(bvi, bvl)
-			bin_vars[5] = bm.dtb( getParIndex( [1,0,0],vars[0] ), 2 )
-			bin_vars[6] = bm.dtb( getParIndex( [1,0,1],vars[1] ), 5 )
-			for i in range( 2 ):
-				full_binary_function[i+ 9] = bin_vars[1][i]
-			full_binary_function[6] = 1
+		# elif func_var == function_names[0][1]:
+			# bin_vars = init_bin_vars(bvi, bvl)
+			# bin_vars[5] = bm.dtb( getParIndex( [1,0,0],vars[0] ), 2 )
+			# bin_vars[6] = bm.dtb( getParIndex( [1,0,1],vars[1] ), 5 )
+			# for i in range( 2 ):
+				# full_binary_function[i+ 9] = bin_vars[1][i]
+			# full_binary_function[6] = 1
 		elif func_var == function_names[1][3]:
 			bvi = _StaticBinVarIndex_.copy()
 			bvl = _StaticBinVarLength_.copy()
@@ -763,8 +744,6 @@ def comp( filename: str, dest_name: str ):
 							temp_type = function_params[MainType][f_func_num][i][0]
 						except Exception:
 							break
-						# fpo = function_param_offset[1][function_names_index]
-						#bin_vars[fpo + i] = bm.dtb( getParIndex( [1,function_names_index,i], vars[i] ), bvl[i + fpo] )
 						try:
 							bin_vars[i] = bm.dtb( getParIndex( [MainType,function_names_index,i], vars[i] ), bvl[i] )
 						except Exception:
