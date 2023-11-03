@@ -31,7 +31,7 @@ def n(na):
 #Logical and in list format
 def al(la, lb):
 	q = []
-	for i in range( bw ):
+	for i in range( len(la) ):
 		q.append( a( la[i], lb[i] ) )
 	return q
 

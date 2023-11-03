@@ -58,10 +58,10 @@ jump_name = "jump"
 
 function_params = [
 	[	#Setup special parameters, at the moment only if is implemeted, thus only the if operators
-		[	[True], [None], ["jump", ">", "==", ">=", "<", "!=", "<=", "weird", "co", ">c", "==c", ">=c", "<c", "!=c", "<=c"], [True], [None] ],
+		[	["jump", ">", "==", ">=", "<", "!=", "<=", "weird", "co", ">c", "==c", ">=c", "<c", "!=c", "<=c"], ["pass"] ],
 	],
 	[	#Setup general function parameters, True=types of regs, False=to/from, None=nan (copy user input in general), "pass"=stop checking for parameters
-		[	[True], [None], ["pass"] ],								#rom
+		[	[True], [None], ["pass"] ],										#rom
 		[	[False],[True], [None], ["pass"] ],						#ram
 		[	[True], [None], [False], [True], [None],["pass"] ],		#reg
 		[	["push","pop"],[True], [None], ["pass"] ],				#stack
@@ -92,7 +92,7 @@ function_var_amount = [
 		4,
 	],
 	[
-		[ 7 ],
+		[ 8 ],
 	],
 ]
 #EOF indicator name
@@ -103,7 +103,8 @@ var_excp = [
 		sei[0],sei[1],eof,function_names[3][1],
 	],
 	[	#Functions that need only first variables
-		function_names[1][5],
+		# function_names[1][5],
+		function_names[0][0],
 		function_names[3][0],
 		function_names[3][2],
 	],
@@ -153,11 +154,11 @@ def getFuncNum( func_var, bool=False ):
 	else:
 		m = 0
 	if func_var in function_names[1]:
-		return function_names[1].index( func_var ) + 1 * m
+		return function_names[1].index( func_var )
 	elif func_var in function_names[2]:
 		return function_names[2].index( func_var ) + 15 * m
 	else:
-		return NameError
+		raise NameError
 
 def getBinLine( lines, line, marks ):
 	"""getBinLine(lines: list, line: int, marks: dict) -> Handles line indexing for assembled file
@@ -172,6 +173,7 @@ def getBinLine( lines, line, marks ):
 	blns = {	#Length of binary lines
 		function_names[1][0]: 2,	#rom
 		function_names[1][1]: 2,	#ram
+		function_names[1][5]: 2,	#io
 		function_names[3][0]: 0,	#mark
 		function_names[3][1]: 1,	#else
 		function_names[3][2]: 3,	#elif
@@ -311,6 +313,7 @@ def get_var_order(MainType: int, FuncNum: int, BVL: list, BVI: list, ReorderDict
 	QBVI = []	#Binary variable index
 	
 	for i, _ in enumerate(BVL):	#Reorder variables and indecies according to the ReorderDict
+		# print("BVL: i: %s, e: %s" % (i, _))
 		QBVL.append(BVL[ReorderDict[MainType][FuncNum][i]])
 		QBVI.append(BVI[ReorderDict[MainType][FuncNum][i]])
 	
@@ -373,27 +376,28 @@ def comp( filename: str, dest_name: str ):
 	
 		0: {
 		
-				0: [5,6,2,7,8,0,1,3,4,9,10],				#Weird problems with more than expected regs copied, hacked to ignore them
+				0: [5,6,2,7,0,1,3,4],				#Weird problems with more than expected regs copied, hacked to ignore them
 		
 			},
 		1: {
 		
-				0: [5,6,2,3,4,0,1,7,8,9,10],
-				1: [0,5,6,2,3,1,4,7,8,9,10],
-				2: [5,6,0,7,8,1,2,3,4,9,10],
-				3: [0,5,6,3,4,1,2,7,8,9,10],
-				4: [0,1,2,3,4,5,6,7,8,9,10],
-				5: [5,6,0,7,8,1,2,3,4,9,10],
+				0: [4,3,0,1,2,5,6,7],
+				1: [0,5,6,2,3,1,4,7],
+				2: [0,1,2,3,4,5,6,7],
+				3: [0,5,6,3,4,1,2,7],
+				4: [0,1,2,3,4,5,6,7],
+				5: [0,1,2,3,4,5,6,7],
 		
 			},
 		2: {
 		
-				0: [5,6,2,7,8,9,10,0,1,3,4],
+				0: [0,1,2,3,4,5,6,7],
 		
 			},
 	
 	}
-	#|var a| |var b| |var d/c| |var d/c| |var e/c| |var e/c|
+	
+	#Static binary variable lengths and placements
 	_StaticBinVarLength_ = [ 4, 2, 2, 5, 2, 5, 2, 5 ]
 	_StaticBinVarIndex_ = [ 5, 9, 11, 13, 18, 20, 25, 27 ]
 	
@@ -446,7 +450,7 @@ def comp( filename: str, dest_name: str ):
 							return -1
 					if func_var in sei:
 						vars[2], vars[3] = ("",)*2
-					for i in range( 2, 7 ):
+					for i in range( 2, 8 ):
 						try:
 							vars[i] = line.pop( 0 )
 						except:
@@ -562,74 +566,48 @@ def comp( filename: str, dest_name: str ):
 					except Exception:
 						raise CustomException("Error: ln %s, Incorrect variable input" % (ln_n + 1))
 				# print("IF:")
-				tbvi = _StaticBinVarIndex_.copy()
-				tbvl = _StaticBinVarLength_.copy()
-				skip_smaller_vars = False
-				t = tbvi.index(7)
-				ti = 0
+				# tbvi = _StaticBinVarIndex_.copy()
+				# tbvl = _StaticBinVarLength_.copy()
+				# skip_smaller_vars = False
+				# t = tbvi.index(7)
+				# ti = 0
 				
-				if tbvl[t] == 4:
-					ti = t
-				else:
-					tbvi.pop(t)
-					tbvl.pop(t)
-					t = tbvi.index(7)
-					if tbvl[t] == 4:
-						ti = t
-					else:
-						raise CustomException("Error: ln %s, Unable to format bin_vars properly.")
+				# if tbvl[t] == 4:
+					# ti = t
+				# else:
+					# tbvi.pop(t)
+					# tbvl.pop(t)
+					# t = tbvi.index(7)
+					# if tbvl[t] == 4:
+						# ti = t
+					# else:
+						# raise CustomException("Error: ln %s, Unable to format bin_vars properly.")
 
-				if bin_vars[ti] != [0 for i in range(4)]:
-					skip_smaller_vars = True
+				# if bin_vars[ti] != [0 for i in range(4)]:
+					# skip_smaller_vars = True
 				
 				for i, e in enumerate(bin_vars):
-					if (bvi[i] == 7 and skip_smaller_vars and i != ti or 
-						bvi[i] == 9 and skip_smaller_vars):
+					if (bvi[i] == 7 and i != ti or 
+						bvi[i] == 9):
 						pass
 					else:
 						for j, _ in enumerate( e ):
 							full_binary_function[bvi[i] + j] = e[j]
 		elif func_var in marks:
-			full_binary_function[18] = 1
+			full_binary_function[0:4] = [0,0,1,0]
+			full_binary_function[5:9] = [1,1,1,0]
+			full_binary_function[9:11] = [1,0]
 			bin_rel_ln = getBinLine( lines, marks[func_var], marks )
 			nextLines[0] = bm.dtb( bin_rel_ln )
-		elif func_var == function_names[1][0] and vars[2] == "at":
-			
-			#Get reference binary variable lenght and indexes
-			bvl = _StaticBinVarLength_.copy()
-			bvi = _StaticBinVarIndex_.copy()
-			
-			bin_vars = init_bin_vars(bvi, bvl)
-			bin_vars[5] = bm.dtb( getParIndex( [1,0,0],vars[0] ), 2 )
-			bin_vars[6] = bm.dtb( getParIndex( [1,0,1],vars[1] ), 5 )
-			full_binary_function = create_full_binary_function(bin_vars, bvi, bvl)
-			nextLines[0] = bm.dtb(eofbln + 1 + int(vars[3]))
-			full_binary_function[0] = 1
-			full_binary_function[8] = 1
-		# elif func_var == function_names[0][1]:
-			# bin_vars = init_bin_vars(bvi, bvl)
-			# bin_vars[5] = bm.dtb( getParIndex( [1,0,0],vars[0] ), 2 )
-			# bin_vars[6] = bm.dtb( getParIndex( [1,0,1],vars[1] ), 5 )
-			# for i in range( 2 ):
-				# full_binary_function[i+ 9] = bin_vars[1][i]
-			# full_binary_function[6] = 1
-		elif func_var == function_names[1][3]:
-			bvi = _StaticBinVarIndex_.copy()
-			bvl = _StaticBinVarLength_.copy()
-			bin_vars = init_bin_vars(bvi, bvl)
-			full_binary_function[2] = 1
-			full_binary_function[6] = getParIndex([1,3,0], vars[0])
-			if vars[1] in regs:
-				full_binary_function[5] = 1
-				bin_vars[5] = bm.dtb(getParIndex([1,3,1], vars[1]), 2)
-				bin_vars[6] = bm.dtb(getParIndex([1,3,2], vars[2]), 5)
-				for i in range(2):
-					full_binary_function[11 + i] = bin_vars[5][i]
-				for i in range(5):
-					full_binary_function[13 + i] = bin_vars[6][i]
+		elif func_var == function_names[1][5]:
+			full_binary_function[0:4] = [0,1,1,0]
+			if vars[0] == "from":
+				full_binary_function[5:9] = [0,0,0,0]
 			else:
-				# print("vars[1]: %s" % (vars[1]))
-				nextLines[0] = bm.dtb(int(vars[1]))
+				full_binary_function[5:9] = [0,1,0,0]
+			full_binary_function[12:13] = bm.dtb(regs.index(vars[2]), 2)
+			full_binary_function[13:19] = bm.dtb(int(vars[3]), 5)
+			nextLines[0] = bm.dtb(int(vars[1]))
 		elif func_var == function_names[3][1]:
 			# print("ELSE:")
 			full_binary_function[5] = 1
@@ -688,7 +666,6 @@ def comp( filename: str, dest_name: str ):
 				full_binary_function = bm.dtb(int( tt ))
 			else:
 				func_num = getFuncNum( func_var )				#Logical function number
-				# f_func_num = getFuncNum( func_var, True )		#Binary function number
 				f_func_num = func_num
 				try:
 					bin_func = bm.dtb( func_num, 4 )				#Function number converted to binary
@@ -740,19 +717,19 @@ def comp( filename: str, dest_name: str ):
 					# print("function_names_index: %s" % (function_names_index))
 					# print("function_var_amount[1][function_names_index]: %s" % (function_var_amount[1][function_names_index]))
 					for i in range(function_var_amount[1][function_names_index]):
-						try:
-							temp_type = function_params[MainType][f_func_num][i][0]
-						except Exception:
-							break
-						try:
-							bin_vars[i] = bm.dtb( getParIndex( [MainType,function_names_index,i], vars[i] ), bvl[i] )
-						except Exception:
-							raise CustomException("Error: ln %s, Incorrect variable input." % (ln_n + 1))
+						# try:
+						temp_type = function_params[MainType][f_func_num][i][0]
+						# except Exception:
+							# break
+						# try:
+						bin_vars[i] = bm.dtb( getParIndex( [MainType,function_names_index,i], vars[i] ), bvl[i] )
+						# except Exception:
+							# raise CustomException("Error: ln %s, Incorrect variable input." % (ln_n + 1))
 						if bin_vars[i] == "pass":
 							bin_vars[i] = None
 							break
 						if func_var == function_names[1][0]:
-							nextLines[0] = bm.dtb( int( vars[2] ) )
+							nextLines[0] = bm.dtb( int(vars[2]) )
 						elif func_var == function_names[1][1]:
 							try:
 								nextLines[0] = bm.dtb( int( vars[3] ) )
@@ -764,28 +741,28 @@ def comp( filename: str, dest_name: str ):
 				tbvi = _StaticBinVarIndex_.copy()
 				tbvl = _StaticBinVarLength_.copy()
 				skip_smaller_vars = False
-				t = tbvi.index(7)
-				ti = 0
+				# t = tbvi.index(7)
+				# ti = 0
 
-				if tbvl[t] == 4:
-					ti = t
-				else:
-					tbvi.pop(t)
-					tbvl.pop(t)
-					t = tbvi.index(7)
-					if tbvl[t] == 4:
-						ti = t
-					else:
-						raise CustomException("Error: ln %s, Unable to format bin_vars properly." % (ln_n + 1))
+				# if tbvl[t] == 4:
+					# ti = t
+				# else:
+					# tbvi.pop(t)
+					# tbvl.pop(t)
+					# t = tbvi.index(7)
+					# if tbvl[t] == 4:
+						# ti = t
+					# else:
+						# raise CustomException("Error: ln %s, Unable to format bin_vars properly." % (ln_n + 1))
 
-				if bin_vars[ti] != [0 for i in range(4)]:
-					skip_smaller_vars = True
+				# if bin_vars[ti] != [0 for i in range(4)]:
+					# skip_smaller_vars = True
 				
 				for i, _ in enumerate(bin_func):
 					full_binary_function[i] = bin_func[i]
 				for i, e in enumerate(bin_vars):
 					# print("bvi: %s" % (bvi[i]))
-					if (bvi[i] == 7 and skip_smaller_vars and i != ti or 
+					if (bvi[i] == 7 and skip_smaller_vars or 
 						bvi[i] == 9 and skip_smaller_vars):
 						pass
 					else:

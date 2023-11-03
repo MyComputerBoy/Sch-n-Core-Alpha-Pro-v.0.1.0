@@ -256,7 +256,6 @@ def alu():		#//Update for new ALU
 		comp = [0,0,1]
 	q = []
 	if func == "0000":		#Addition
-		lgn.debug("ALU: ADD")
 		q, co = g.la(num_a, num_b)
 	elif func == "1000":	#Subraction
 		q, co = g.ls(num_a, num_b)
@@ -676,11 +675,13 @@ def execute(set_list, ena_list, gui=False,
 	if set_list[2]:	#abr
 		reg(ReadWrite.WRITE, ALUConfig.BREGISTER, RegType.ALU, var)
 	if set_list[3]:	#conditional branch
-		comparison = reg(ReadWrite.Read, ProtReg.FLAGS, RegType.PROTECTED)
-		if isinstance(var_a, type(None)):
+		comparison = reg(ReadWrite.READ, ProtReg.FLAGS, RegType.PROTECTED)
+		if isinstance(variables[2], type(None)):
 			lgn.critical("Execute: Comparison variable not given.")
 			raise TypeError
-		if comparison == var_a:
+		if variables[3][0] == 1:
+			reg(ReadWrite.WRITE, ProtReg.PROGRAMCOUNTER, RegType.PROTECTED, var)
+		if g.al(comparison[0:4], variables[2]) != [0,0,0,0]:
 			reg(ReadWrite.WRITE, ProtReg.PROGRAMCOUNTER, RegType.PROTECTED, var)
 	if set_list[4]:	#aor
 		alu_r = alu()
