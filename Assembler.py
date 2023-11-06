@@ -23,6 +23,12 @@ import BaseCPUInfo
 import importlib as il 
 import math 
 import BasicMath as bm
+import logging as lgn			#Logging for custom exceptions
+
+LOGLEVEL = lgn.WARNING
+
+lgn.basicConfig(format="%(levelname)s: %(message)s", level=lgn.DEBUG)
+lgn.getLogger().setLevel(LOGLEVEL)
 
 ##########################################################
 #Show advanced infomation
@@ -359,6 +365,9 @@ def comp( filename: str, dest_name: str ):
 	
 	Returns: file with name (dest_name).schonexe
 	"""
+	
+	lgn.getLogger().setLevel(LOGLEVEL)
+	
 	fh = open( bf + pf + filename )
 	lines = fh.readlines()
 	fh.close()
@@ -370,13 +379,14 @@ def comp( filename: str, dest_name: str ):
 	marks, if_marks = find_marks( lines )
 	eofln = 0		#End Of File Line
 	
-	print("\n\n%s%s.py: %s" % (bf, __name__, bf + pf + filename))
+	lgn.info("%s%s.py: Schön Core Alpha v.0.1.0 Assembler." % (bf, __name__))
+	lgn.info("Assembling: %s" % (bf + pf + filename))
 	
 	ReorderDict = {											#Dict for reordering variables
 	
 		0: {
 		
-				0: [5,6,2,7,0,1,3,4],				#Weird problems with more than expected regs copied, hacked to ignore them
+				0: [0,1,2,3,4,5,6,7],				#Weird problems with more than expected regs copied, hacked to ignore them
 		
 			},
 		1: {
@@ -391,7 +401,7 @@ def comp( filename: str, dest_name: str ):
 			},
 		2: {
 		
-				0: [0,1,2,3,4,5,6,7],
+				0: [2,3,0,4,5,6,7,1],
 		
 			},
 	
@@ -411,8 +421,7 @@ def comp( filename: str, dest_name: str ):
 		print( if_marks )
 	eofbln = getBinLine( lines, eofln, marks )
 	while ln_n < len( lines ):
-		if show_adv_inf == "yes":
-			print( "ln_n: " + str( ln_n ) )
+		lgn.debug("ln_n: %s" % (str(ln_n)))
 		line = lines[ln_n].split()
 		func_var = line.pop( 0 )
 		try:
@@ -483,14 +492,14 @@ def comp( filename: str, dest_name: str ):
 				rel_ln = 1
 				used_in_escape = 1
 				
-				
-				
 				try:
 					temp_unused_var = lines[ln_n + rel_ln]
 				except Exception:
 					print( "Error: ln " + str( ln_n + 1 ) +": Expected if inscape, got none" )
 					return -1
 				rel_rel_ln = 1
+				
+				#If binary lines 
 				iblns = {
 					function_names[1][0]: 2,
 					function_names[1][1]: 2,
@@ -529,6 +538,8 @@ def comp( filename: str, dest_name: str ):
 						raise CustomException( "Error: ln %s: Expected if escape, got none, 0" % (ln_n + 1))
 				if temp_temp_func == function_names[3][1] or temp_temp_func == function_names[3][2]:
 					bin_rel_ln += 2
+				
+				full_binary_function[0:4] = [0,0,1,0]
 				nextLines[0] = bm.dtb( bin_ln + 2 + bin_rel_ln )
 				
 				#Get reference binary variable lenght and indexes
@@ -565,34 +576,10 @@ def comp( filename: str, dest_name: str ):
 						bin_vars.append(bm.dtb( getParIndex( [MainType,function_names_index,i], vars[i] ), bvl[i] ))
 					except Exception:
 						raise CustomException("Error: ln %s, Incorrect variable input" % (ln_n + 1))
-				# print("IF:")
-				# tbvi = _StaticBinVarIndex_.copy()
-				# tbvl = _StaticBinVarLength_.copy()
-				# skip_smaller_vars = False
-				# t = tbvi.index(7)
-				# ti = 0
-				
-				# if tbvl[t] == 4:
-					# ti = t
-				# else:
-					# tbvi.pop(t)
-					# tbvl.pop(t)
-					# t = tbvi.index(7)
-					# if tbvl[t] == 4:
-						# ti = t
-					# else:
-						# raise CustomException("Error: ln %s, Unable to format bin_vars properly.")
 
-				# if bin_vars[ti] != [0 for i in range(4)]:
-					# skip_smaller_vars = True
-				
 				for i, e in enumerate(bin_vars):
-					if (bvi[i] == 7 and i != ti or 
-						bvi[i] == 9):
-						pass
-					else:
-						for j, _ in enumerate( e ):
-							full_binary_function[bvi[i] + j] = e[j]
+					for j, _ in enumerate( e ):
+						full_binary_function[bvi[i] + j] = e[j]
 		elif func_var in marks:
 			full_binary_function[0:4] = [0,0,1,0]
 			full_binary_function[5:9] = [1,1,1,0]
@@ -705,7 +692,9 @@ def comp( filename: str, dest_name: str ):
 						bin_vars[0] = bm.dtb( 1, bvl[0] )
 					for i, _ in enumerate(bin_vars):
 						if getParIndex( [2,0,i], vars[i] ) == "pass":
+							lgn.debug("Compute: Exited binary variable parsing.")
 							break
+						lgn.debug("Compute: Variable %s: %s -> %s, at index: %s" % (i, vars[i], getParIndex( [2,0,i], vars[i]), bvi[i]))
 						bin_vars[i] = bm.dtb( getParIndex( [2,0,i], vars[i] ), bvl[i] )
 				else:
 					is_alu = 0
@@ -738,37 +727,12 @@ def comp( filename: str, dest_name: str ):
 				
 				full_binary_function[4] = is_alu
 				
-				tbvi = _StaticBinVarIndex_.copy()
-				tbvl = _StaticBinVarLength_.copy()
-				skip_smaller_vars = False
-				# t = tbvi.index(7)
-				# ti = 0
-
-				# if tbvl[t] == 4:
-					# ti = t
-				# else:
-					# tbvi.pop(t)
-					# tbvl.pop(t)
-					# t = tbvi.index(7)
-					# if tbvl[t] == 4:
-						# ti = t
-					# else:
-						# raise CustomException("Error: ln %s, Unable to format bin_vars properly." % (ln_n + 1))
-
-				# if bin_vars[ti] != [0 for i in range(4)]:
-					# skip_smaller_vars = True
-				
 				for i, _ in enumerate(bin_func):
 					full_binary_function[i] = bin_func[i]
 				for i, e in enumerate(bin_vars):
-					# print("bvi: %s" % (bvi[i]))
-					if (bvi[i] == 7 and skip_smaller_vars or 
-						bvi[i] == 9 and skip_smaller_vars):
-						pass
-					else:
-						for j, _ in enumerate( e ):
-							full_binary_function[bvi[i] + j] = e[j]
-				# print("full_binary_function: %s" % (bm.blts(full_binary_function)))
+					for j, _ in enumerate( e ):
+						full_binary_function[bvi[i] + j] = e[j]
+				lgn.debug("full_binary_function: %s" % (bm.blts(full_binary_function)))
 		if func_var not in wtf_excp:
 			fh.write( bm.blts( full_binary_function ) + "\n" )
 			bin_ln += 1
@@ -778,4 +742,5 @@ def comp( filename: str, dest_name: str ):
 					bin_ln += 1
 		ln_n += 1
 	fh.close()
+	lgn.info("Assembler: Finished assembling.")
 	return 1

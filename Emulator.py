@@ -29,7 +29,10 @@ import time
 import logging as lgn			#Logging for custom exceptions
 from enum import Enum
 
+LOGLEVEL = lgn.WARNING
+
 lgn.basicConfig(format="%(levelname)s: %(message)s", level=lgn.DEBUG)
+lgn.getLogger().setLevel(LOGLEVEL)
 
 lgn.debug("Imported libraries.")
 
@@ -102,7 +105,7 @@ class ALUConfig(Enum):
 	INCREMENT = 3
 	DECREMENT = 4
 	SPECIALFUNCTION = 6
-	SETFLAGS = 7
+	SETFLAGS = 10
 	BREGISTER = 8
 
 class RuntimeVariables(Enum):
@@ -242,8 +245,8 @@ def alu():		#//Update for new ALU
 	func = reg(ReadWrite.READ, ALUConfig.ALUFUNCTION, RegType.ALU)
 	tmp = [0 for i in range(4)]
 	for i in range(4):
-		if tmp[i] == 1:
-			func[i] = 1
+		if func[i] == 1:
+			tmp[i] = 1
 	func = bm.blts(tmp)
 	tmp_a = bm.btd(num_a)
 	tmp_b = bm.btd(num_b)
@@ -256,8 +259,11 @@ def alu():		#//Update for new ALU
 		comp = [0,0,1]
 	q = []
 	if func == "0000":		#Addition
+		lgn.info("ALU: ADD")
+		lgn.info("Variable a: %s, b: %s" % (bm.btd(num_a), bm.btd(num_b)))
 		q, co = g.la(num_a, num_b)
 	elif func == "1000":	#Subraction
+		lgn.info("ALU: SUB")
 		q, co = g.ls(num_a, num_b)
 	elif func == "0100":	#Multiplication
 		q = g.mul(num_a, num_b)
@@ -277,12 +283,16 @@ def alu():		#//Update for new ALU
 		else:
 			q, co = shift(num_b, bm.btd(num_a))
 	elif func == "1111":	#Compare
+		lgn.info("ALU: CMP")
 		q = num_b
+		lgn.info("ALU: %s cmp %s" % (bm.btd(num_a), bm.btd(num_b)))
+		lgn.info("CMP: %s" % (bm.blts(comp)))
 	else:					#Error
-		lgn.critical("ALU: Invalid function call at line %s" % (bm.btd(ln)+1))
+		lgn.critical("ALU: Invalid function call at line %s" % (bm.btd(ln)))
 		raise Exception
 	
 	comp.append(co)
+	lgn.info(comp)
 	reg(ReadWrite.WRITE, ProtReg.AOR, RegType.PROTECTED, q)
 	if set_list[ALUConfig.SETFLAGS.value]:
 		reg(ReadWrite.WRITE, ProtReg.FLAGS, RegType.PROTECTED, comp)
@@ -440,7 +450,8 @@ FunctionDefinitions = [
 			[0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0],	#
 		],
 		[	#GPIO At Immediate Register Write    20
-			[1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0],	#
+			[1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0],	#
+			[0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0],	#
 			[0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0],	#
 		],
 		[	#GPIO At Address At Immediate Register Write
@@ -543,6 +554,7 @@ FunctionDefinitions = [
 		],
 		[	#GPIO At Immediate Register Write
 			[1,1,0,0,0,0,0,0,0,0,0,0,0,0,0],	#
+			[0,0,0,0,0,0,1,0,0,0,0,0,0,0,0],	#
 			[0,0,0,0,0,0,0,0,0,1,0,0,0,0,0],	#
 		],
 		[	#GPIO At Address At Immediate Register Write
@@ -655,8 +667,10 @@ def execute(set_list, ena_list, gui=False,
 	if ena_list[8]:		#gpi 
 		var = bm.dtb(int(input("Number: ")))
 	if ena_list[9]:		#rega 
+		lgn.debug("Execute: REGB: %s:%s" % (reg_a[0], reg_a[1]))
 		var = reg(ReadWrite.READ, reg_a[0], reg_a[1])
 	if ena_list[10]:	#regb 
+		lgn.debug("Execute: REGB: %s:%s" % (reg_b[0], reg_b[1]))
 		var = reg(ReadWrite.READ, reg_b[0], reg_b[1])
 	if ena_list[11]:	#regc
 		var = reg(ReadWrite.READ, reg_c[0], reg_c[1])
@@ -667,21 +681,20 @@ def execute(set_list, ena_list, gui=False,
 	# lgn.debug("BUFFER:%s" % (bm.blts(var)))
 	
 	#Set actions:
-	if set_list[0]:
-		pci()
-		temp = reg(ReadWrite.READ, ProtReg.PROGRAMCOUNTER, RegType.PROTECTED)
 	if set_list[1]:	#pc
 		reg(ReadWrite.WRITE, ProtReg.PROGRAMCOUNTER, RegType.PROTECTED, var)
 	if set_list[2]:	#abr
+		temp = buf(0)
+		lgn.debug("Execute: ALU B Register: %s" % (bm.btd(temp)))
 		reg(ReadWrite.WRITE, ALUConfig.BREGISTER, RegType.ALU, var)
 	if set_list[3]:	#conditional branch
 		comparison = reg(ReadWrite.READ, ProtReg.FLAGS, RegType.PROTECTED)
 		if isinstance(variables[2], type(None)):
 			lgn.critical("Execute: Comparison variable not given.")
 			raise TypeError
-		if variables[3][0] == 1:
-			reg(ReadWrite.WRITE, ProtReg.PROGRAMCOUNTER, RegType.PROTECTED, var)
-		if g.al(comparison[0:4], variables[2]) != [0,0,0,0]:
+		lgn.info("CB: %s, %s" % (bm.blts(comparison[0:4]), bm.blts(variables[2])))
+		if variables[3][0] == 1 or bm.btd(g.al(comparison[0:4], variables[2])) == 0:
+			lgn.info("Conditional Branch: BRANCHED.")
 			reg(ReadWrite.WRITE, ProtReg.PROGRAMCOUNTER, RegType.PROTECTED, var)
 	if set_list[4]:	#aor
 		alu_r = alu()
@@ -696,12 +709,15 @@ def execute(set_list, ena_list, gui=False,
 	if set_list[7]:	#roma
 		reg(ReadWrite.WRITE, ProtReg.ROMADDRESS, RegType.PROTECTED, var)
 	if set_list[8]:	#gpoa
-		lgn.debug("Execute: GPIO Address: %s" % (bm.btd(var)))
+		lgn.info("Set GPIO Address: %s" % (bm.btd(var)))
 	if set_list[9]:	#gpod
 		pr(var, gui)
 	if set_list[11]:	#pid
 		reg(ReadWrite.WRITE, ProtReg.REGINTERMEDIATE, RegType.PROTECTED, var)
 	if set_list[12]:	#rega
+		temp_pc = reg(ReadWrite.READ, ProtReg.PROGRAMCOUNTER, RegType.PROTECTED)
+		lgn.debug("SET: %s:%s = %s @ PC: %s" % (reg_a[0], reg_a[1], bm.btd(var), bm.btd(temp_pc)))
+		lgn.debug("ENABLELIST: %s\nSETLIST: %s" % (bm.blts(ena_list), bm.blts(set_list)))
 		reg(ReadWrite.WRITE, reg_a[0], reg_a[1], var)
 	if set_list[13]:	#regb
 		reg(ReadWrite.WRITE, reg_b[0], reg_b[1], var)
@@ -711,6 +727,8 @@ def execute(set_list, ena_list, gui=False,
 		reg(ReadWrite.WRITE, ProtReg.CONTROLUNITINPUT, RegType.PROTECTED, var)
 	if set_list[16]:	#sp
 		reg(ReadWrite.WRITE, ProtReg.STACKPOINTER, RegType.PROTECTED, var)
+	if set_list[0]:
+		pci()
 
 #Run Single Instruction
 def single_instruction(reset=0, gui=False, 
@@ -738,14 +756,16 @@ def single_instruction(reset=0, gui=False,
 			lgn.debug("Cleared registers")
 		return 0
 	
+	#Get program counter, mainly for debugging
+	ln = reg(ReadWrite.READ, ProtReg.PROGRAMCOUNTER, RegType.PROTECTED)
+	lgn.info("SingleRun: Program Counter: %s" % (bm.btd(ln)))
+	
 	#fetch next instruction 
 	for i, _ in enumerate(FunctionDefinitions[0][0]):
+		lgn.debug("FETCH: %s" % (i))
 		execute(FunctionDefinitions[0][0][i], FunctionDefinitions[1][0][i])
 	# clear_reg_offs()
 	inp = reg(ReadWrite.READ, ProtReg.CONTROLUNITINPUT, RegType.PROTECTED)
-	
-	#Get program counter, mainly for debugging
-	ln = reg(ReadWrite.READ, ProtReg.PROGRAMCOUNTER, RegType.PROTECTED)
 	
 	#if input is all 1s, exit with return code 1
 	exit_signal = True
@@ -783,15 +803,18 @@ def single_instruction(reset=0, gui=False,
 	
 	if force_show_exceptions:
 		for i, var in enumerate(instruction_vars):
-			print("%s: %s" % (RuntimeVariables(i).name, bm.blts(var)))
+			lgn.info("%s: %s" % (RuntimeVariables(i).name, bm.blts(var)))
 	
 	_ofs, meta_func = ofs(bm.btd(instruction_vars[RuntimeVariables.FUNCTIONVARIABLE.value]), instruction_vars)
 	if _ofs == EmulatorRuntimeError.ILLEGALFUNCTION:
 		return -1
 	
-	if instruction_vars[RuntimeVariables.LOGICALALU.value] == 1:
+	# lgn.debug("SingleInstruction: Runtime variables: \n%s" % (instruction_vars))
+	if instruction_vars[RuntimeVariables.LOGICALALU.value][0] == 1:
+		lgn.info("SingleInstruction: ALU Function: %s" % (instruction_vars[RuntimeVariables.FUNCTIONVARIABLE.value]))
 		reg(ReadWrite.WRITE, ALUConfig.ALUFUNCTION, RegType.ALU, instruction_vars[RuntimeVariables.FUNCTIONVARIABLE.value])
 	for i, _ in enumerate(FunctionDefinitions[0][_ofs]):
+		lgn.debug("RUN: %s" % (i))
 		execute(FunctionDefinitions[0][_ofs][i], 
 				FunctionDefinitions[1][_ofs][i], 
 				gui, instruction_vars)
@@ -815,6 +838,8 @@ def run(filename, gui=False, print_line_nr=False,
 	
 	Returns: error code: -1 for error, 0 for instruction completed but continue and 1 for completed and exit
 	"""
+	
+	lgn.getLogger().setLevel(LOGLEVEL)
 	
 	#Open and read file for execution 
 	file_path = bf + exeff + filename + file_extension_name
