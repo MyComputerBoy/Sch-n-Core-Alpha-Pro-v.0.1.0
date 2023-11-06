@@ -45,7 +45,6 @@ exeff = BaseCPUInfo.executable_files_folder
 
 file_extension_name = ".schonexe1"
 
-#All types of memory storage units, including ram and registers
 rom_data = []
 
 bz = bm.dtb(0) #Binary zero
@@ -55,6 +54,7 @@ def initialize_rom(Filename: str):
 	"""
 	rom_fh = open(bf + exeff + Filename + file_extension_name, "r")
 	global rom_data 
+	rom_data = []
 	rom_data_temp = rom_fh.readlines()
 	rom_fh.close()
 	
@@ -713,6 +713,8 @@ def execute(set_list, ena_list, gui=False,
 	if set_list[9]:	#gpod
 		pr(var, gui)
 	if set_list[11]:	#pid
+		temp = reg(ReadWrite.READ, reg_a[0], reg_a[1])
+		lgn.debug("RID: %s:%s -> %s" % (reg_b[0], reg_b[1], bm.btd(temp)))
 		reg(ReadWrite.WRITE, ProtReg.REGINTERMEDIATE, RegType.PROTECTED, var)
 	if set_list[12]:	#rega
 		temp_pc = reg(ReadWrite.READ, ProtReg.PROGRAMCOUNTER, RegType.PROTECTED)

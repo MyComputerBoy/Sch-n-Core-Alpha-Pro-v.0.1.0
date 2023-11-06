@@ -25,7 +25,7 @@ import math
 import BasicMath as bm
 import logging as lgn			#Logging for custom exceptions
 
-LOGLEVEL = lgn.WARNING
+LOGLEVEL = lgn.INFO
 
 lgn.basicConfig(format="%(levelname)s: %(message)s", level=lgn.DEBUG)
 lgn.getLogger().setLevel(LOGLEVEL)
@@ -67,12 +67,12 @@ function_params = [
 		[	["jump", ">", "==", ">=", "<", "!=", "<=", "weird", "co", ">c", "==c", ">=c", "<c", "!=c", "<=c"], ["pass"] ],
 	],
 	[	#Setup general function parameters, True=types of regs, False=to/from, None=nan (copy user input in general), "pass"=stop checking for parameters
-		[	[True], [None], ["pass"] ],										#rom
-		[	[False],[True], [None], ["pass"] ],						#ram
-		[	[True], [None], [False], [True], [None],["pass"] ],		#reg
-		[	["push","pop"],[True], [None], ["pass"] ],				#stack
-		[	[True], [None], ["pass"] ],								#interrupt
-		[	[False], [None], [True], [None],["pass"] ],				#io
+		[	[True], [None], ["pass"] ],											#rom
+		[	[False],[True], [None], ["pass"] ],									#ram
+		[	[True], [None], ["swap", "clone"], [True], [None],["pass"] ],		#reg
+		[	["push","pop"],[True], [None], ["pass"] ],							#stack
+		[	[True], [None], ["pass"] ],											#interrupt
+		[	[False], [None], [True], [None],["pass"] ],							#io
 	],
 	[	#Setup special device parameters (e.g. ALU)
 		[	[True], [None], ["add","sub","mul","div","and","or","xor","not","shift","","","","","","","compare"],[True],[None],[True],[None],["pass"] ],
@@ -393,7 +393,7 @@ def comp( filename: str, dest_name: str ):
 		
 				0: [4,3,0,1,2,5,6,7],
 				1: [0,5,6,2,3,1,4,7],
-				2: [0,1,2,3,4,5,6,7],
+				2: [2,3,1,4,5,6,7,0],
 				3: [0,5,6,3,4,1,2,7],
 				4: [0,1,2,3,4,5,6,7],
 				5: [0,1,2,3,4,5,6,7],
@@ -692,19 +692,11 @@ def comp( filename: str, dest_name: str ):
 						bin_vars[0] = bm.dtb( 1, bvl[0] )
 					for i, _ in enumerate(bin_vars):
 						if getParIndex( [2,0,i], vars[i] ) == "pass":
-							lgn.debug("Compute: Exited binary variable parsing.")
 							break
-						lgn.debug("Compute: Variable %s: %s -> %s, at index: %s" % (i, vars[i], getParIndex( [2,0,i], vars[i]), bvi[i]))
 						bin_vars[i] = bm.dtb( getParIndex( [2,0,i], vars[i] ), bvl[i] )
 				else:
 					is_alu = 0
 					function_names_index = function_names[MainType].index( func_var )
-					# print("func_var: %s" % (bm.blts(func_var)))
-					# print("vars: %s" % (vars))
-					# print("bvi: %s" % (bvi))
-					# print("ReorderDict[%s][%s]: %s" % (MainType, func_var, ReorderDict[MainType][function_names[MainType].index(func_var)]))
-					# print("function_names_index: %s" % (function_names_index))
-					# print("function_var_amount[1][function_names_index]: %s" % (function_var_amount[1][function_names_index]))
 					for i in range(function_var_amount[1][function_names_index]):
 						# try:
 						temp_type = function_params[MainType][f_func_num][i][0]
@@ -732,7 +724,6 @@ def comp( filename: str, dest_name: str ):
 				for i, e in enumerate(bin_vars):
 					for j, _ in enumerate( e ):
 						full_binary_function[bvi[i] + j] = e[j]
-				lgn.debug("full_binary_function: %s" % (bm.blts(full_binary_function)))
 		if func_var not in wtf_excp:
 			fh.write( bm.blts( full_binary_function ) + "\n" )
 			bin_ln += 1
