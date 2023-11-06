@@ -25,7 +25,7 @@ import math
 import BasicMath as bm
 import logging as lgn			#Logging for custom exceptions
 
-LOGLEVEL = lgn.DEBUG
+LOGLEVEL = lgn.INFO
 
 lgn.basicConfig(format="%(levelname)s: %(message)s", level=lgn.DEBUG)
 lgn.getLogger().setLevel(LOGLEVEL)
@@ -320,7 +320,7 @@ def find_marks(lines: list):
 				ts = str( len( funcs ) - 1)
 				ts = gin( funcs, ts, True )
 				tss = str( len( funcs[ts] ) )
-			funcs[ ts ][tss] = {'0': 0, '1': ln}
+				funcs[ ts ][tss] = {'0': 0, '1': ln}
 		ln += 1
 	return marks, if_marks, funcs, funcs_names
 
@@ -447,10 +447,9 @@ def comp( filename: str, dest_name: str ):
 		if eof in i:
 			break 
 		eofln += 1
-	if show_adv_inf == "yes":
-		print( "EOL: " + str( eofln ) )
-		print( "IF_MARKS: " )
-		print( if_marks )
+		lgn.debug( "EOL: " + str( eofln ) )
+		lgn.debug( "IF_MARKS: " )
+		lgn.debug( if_marks )
 	eofbln = getBinLine( lines, eofln, marks )
 	while ln_n < len( lines ):
 		lgn.debug("ln_n: %s" % (str(ln_n)))
@@ -536,6 +535,7 @@ def comp( filename: str, dest_name: str ):
 				iblns = {
 					function_names[1][0]: 2,
 					function_names[1][1]: 2,
+					function_names[1][5]: 2,
 					function_names[3][0]: 0
 				}
 				while inline( True, ln_n + 1 + rel_rel_ln, filename, used_in_escape ):
@@ -618,14 +618,14 @@ def comp( filename: str, dest_name: str ):
 			full_binary_function[9:11] = [1,0]
 			bin_rel_ln = getBinLine( lines, marks[func_var], marks )
 			nextLines[0] = bm.dtb( bin_rel_ln )
-		elif func_var in funcs_names:
-			full_binary_function[0:4] = [1,0,1,0]
-			try:
-				full_binary_function[12:13] = bm.dtb(regs.index(vars[0]), 2)
-				full_binary_function[13:19] = bm.dtb(int(vars[1]), 5)
-			except ValueError:
-				lgn.critical("Call %s: Error: invalid variables." % (func_var))
-				return -1
+		# elif func_var in funcs_names:
+			# full_binary_function[0:4] = [1,0,1,0]
+			# try:
+				# full_binary_function[12:13] = bm.dtb(regs.index(vars[0]), 2)
+				# full_binary_function[13:19] = bm.dtb(int(vars[1]), 5)
+			# except ValueError:
+				# lgn.critical("Call %s: Error: invalid variables." % (func_var))
+				# return -1
 		elif func_var == function_names[1][1]:
 			full_binary_function[0:4] = [1,0,0,0]
 			if vars[0] == "to":
@@ -739,14 +739,18 @@ def comp( filename: str, dest_name: str ):
 					try:
 						bin_func = bm.dtb( getParIndex( [2,0,2], vars[2] ), 4 )
 					except ValueError:
-						lgn.critical("Compute: ln %s: Error, invalid variables." % (ln_n))
-						raise ValueError
+						lgn.critical("Compute: ln %s: Error, invalid variables." % (ln_n + 1))
+						return -1
 					if vars[0] == function_params[2][0][2][8]:
 						bin_vars[0] = bm.dtb( 1, bvl[0] )
-					for i, _ in enumerate(bin_vars):
-						if getParIndex( [2,0,i], vars[i] ) == "pass":
-							break
-						bin_vars[i] = bm.dtb( getParIndex( [2,0,i], vars[i] ), bvl[i] )
+					try:
+						for i, _ in enumerate(bin_vars):
+							if getParIndex( [2,0,i], vars[i] ) == "pass":
+								break
+							bin_vars[i] = bm.dtb( getParIndex( [2,0,i], vars[i] ), bvl[i] )
+					except ValueError:
+						lgn.critical("Compute: ln %s: Error, invalid variables." % (ln_n + 1))
+						return -1
 				else:
 					is_alu = 0
 					function_names_index = function_names[MainType].index( func_var )

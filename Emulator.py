@@ -601,8 +601,13 @@ def ofs(func, instruction_vars):	#Offset
 	ofs_use_var_b	= [1,0,1,1,0,0,1,0]
 	
 	tl = []
-	if ofs_use_var_b[func]:
-		tl = bm.bla(tl, instruction_vars[RuntimeVariables.VARIABLEA.value])
+	try:
+		if ofs_use_var_b[func]:
+			tl = bm.bla(tl, instruction_vars[RuntimeVariables.VARIABLEA.value])
+	except IndexError:
+		ProgramCounter = reg(ReadWrite.READ, ProtReg.PROGRAMCOUNTER, RegType.PROTECTED)
+		lgn.critical("Offset: Error: Program Counter: %s: Invalid function number." % (bm.btd(ProgramCounter)))
+		return EmulatorRuntimeError.ILLEGALFUNCTION, -1
 	if ofs_use_var_a[func]:
 		tl = bm.bla(tl, instruction_vars[RuntimeVariables.VARIABLEB.value])
 	
@@ -668,7 +673,12 @@ def execute(set_list, ena_list, gui=False,
 		lgn.debug("RAMD: %s READS %s" % (bm.btd(tmp), bm.blts(var)))
 	if ena_list[6]:		#romd 
 		tmp = reg(ReadWrite.READ, ProtReg.ROMADDRESS, RegType.PROTECTED)
-		var = rom(0, bm.btd(tmp))
+		try:
+			var = rom(0, bm.btd(tmp))
+		except IndexError:
+			temp = reg(ReadWrite.READ, ProtReg.ROMADDRESS, RegType.PROTECTED)
+			lgn.critical("ROM: Error: Invalid program counter: %s" % (bm.btd(temp)))
+			raise IndexError
 	if ena_list[7]:		#Register intermediate data
 		var = reg(ReadWrite.READ, ProtReg.REGINTERMEDIATE, RegType.PROTECTED)
 	if ena_list[8]:		#gpi 
