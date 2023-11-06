@@ -258,11 +258,11 @@ def alu():		#//Update for new ALU
 	else:
 		comp = [0,0,1]
 	q = []
-	if func == "0000":		#Addition
+	if func == "0000" and ena_list[ALUConfig.DECREMENT.value] == 0 or ena_list[ALUConfig.INCREMENT.value]:		#Addition
 		lgn.info("ALU: ADD")
 		lgn.info("Variable a: %s, b: %s" % (bm.btd(num_a), bm.btd(num_b)))
 		q, co = g.la(num_a, num_b)
-	elif func == "1000":	#Subraction
+	elif func == "1000" or ena_list[ALUConfig.DECREMENT.value]:	#Subraction
 		lgn.info("ALU: SUB")
 		q, co = g.ls(num_a, num_b)
 	elif func == "0100":	#Multiplication
@@ -378,16 +378,18 @@ FunctionDefinitions = [
 			[0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0],
 		],
 		[	#RAM At Immediate READ---------------
-			[1,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0],
+			[1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0],
+			[0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0],
 			[0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0],
 		],
 		[	#RAM At Address At Immediate READ     5
-			[1,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0],
+			[1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0],
 			[0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0],
 			[0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0],
 		],
 		[	#RAM At Immediate WRITE
-			[1,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0],
+			[1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0],
+			[0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0],
 			[0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0],
 		],
 		[	#RAM At Address At Immediate WRITE
@@ -408,9 +410,9 @@ FunctionDefinitions = [
 			[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0],
 		],
 		[	#STACK POP
-			[0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0],
+			[0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+			[0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,1,0,0],
 			[0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0],
-			[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0],
 		],
 		[	#STACK POINT TO AT REGISTER
 			[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0],
@@ -427,7 +429,8 @@ FunctionDefinitions = [
 		],
 		[	#CALL FUNCTION-----------------------
 			[0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0],	#Push to stack
-			[0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0],	#PC
+			[0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0],	#
+			[0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0],	#
 			[0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0],	#Push to stack
 			[0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0],	#RegA
 			[1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0],	#Initiate branch
@@ -482,21 +485,23 @@ FunctionDefinitions = [
 		],
 		[	#RAM At Immediate READ
 			[1,1,0,0,0,0,0,0,0,0,0,0,0,0,0],
+			[0,0,0,0,0,0,1,0,0,0,0,0,0,0,0],
 			[0,0,0,0,0,1,0,0,0,0,0,0,0,0,0],
 		],
 		[	#RAM At Address At Immediate READ
 			[1,1,0,0,0,0,0,0,0,0,0,0,0,0,0],
-			[0,0,0,0,0,1,0,0,0,0,0,0,0,0,0],
+			[0,0,0,0,0,0,1,0,0,0,0,0,0,0,0],
 			[0,0,0,0,0,1,0,0,0,0,0,0,0,0,0],
 		],
 		[	#RAM At Immediate WRITE
 			[1,1,0,0,0,0,0,0,0,0,0,0,0,0,0],
+			[0,0,0,0,0,0,1,0,0,0,0,0,0,0,0],
 			[0,0,0,0,0,0,0,0,0,1,0,0,0,0,0],
 		],
 		[	#RAM At Address At Immediate WRITE
 			[1,1,0,0,0,0,0,0,0,0,0,0,0,0,0],
 			[0,0,0,0,0,1,0,0,0,0,0,0,0,0,0],
-			[0,0,0,0,0,0,0,0,0,1,0,0,0,0,0],
+			[0,0,0,0,0,1,0,0,0,0,0,0,0,0,0],
 		],
 		[	#REG Swap
 			[0,0,0,0,0,0,0,0,0,1,0,0,0,0,0],
@@ -512,8 +517,8 @@ FunctionDefinitions = [
 		],
 		[	#STACK POP
 			[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0],
-			[0,0,0,0,0,1,0,0,0,0,0,0,0,0,0],
 			[0,0,1,0,0,0,0,0,0,0,0,0,0,0,0],
+			[0,0,0,0,0,1,0,0,0,0,0,0,0,0,0],
 		],
 		[	#STACK POINT TO AT REGISTER
 			[0,0,0,0,0,0,0,0,0,1,0,0,0,0,0],
@@ -530,6 +535,7 @@ FunctionDefinitions = [
 		],
 		[	#CALL FUNCTION
 			[0,0,0,1,0,0,0,0,0,0,0,0,1,0,0],	#Push to stack
+			[0,0,1,0,0,0,0,0,0,0,0,0,0,0,0],	#
 			[0,1,0,0,0,0,0,0,0,0,0,0,0,0,0],	#PC
 			[0,0,1,1,0,0,0,0,0,0,0,0,0,0,0],	#Push to stack
 			[0,0,0,0,0,0,0,0,0,1,0,0,0,0,0],	#RegA
@@ -591,8 +597,8 @@ def ofs(func, instruction_vars):	#Offset
 	#ftch, alu, rom, ram, reg, stck, conbrnch, intrpt, callretrn
 	#-----------------------------------------------------------------
 	ofs_array		= [2, 4,8,10,14,16,18]
-	ofs_use_var_a	= [0,1,0,1,0,0,0,1]
-	ofs_use_var_b	= [1,0,1,0,0,0,1,0]
+	ofs_use_var_a	= [0,1,0,0,0,0,0,1]
+	ofs_use_var_b	= [1,0,1,1,0,0,1,0]
 	
 	tl = []
 	if ofs_use_var_b[func]:
@@ -659,6 +665,7 @@ def execute(set_list, ena_list, gui=False,
 	if ena_list[5]:		#ramd 
 		tmp = reg(ReadWrite.READ, ProtReg.RAMADDRESS, RegType.PROTECTED)
 		var = ram(ReadWrite.READ, bm.btd(tmp), "RAMD ENABLE EXECUTE()")
+		lgn.debug("RAMD: %s READS %s" % (bm.btd(tmp), bm.blts(var)))
 	if ena_list[6]:		#romd 
 		tmp = reg(ReadWrite.READ, ProtReg.ROMADDRESS, RegType.PROTECTED)
 		var = rom(0, bm.btd(tmp))
@@ -675,7 +682,7 @@ def execute(set_list, ena_list, gui=False,
 	if ena_list[11]:	#regc
 		var = reg(ReadWrite.READ, reg_c[0], reg_c[1])
 	if ena_list[12]:	#stack pointer
-		var = rar(ReadWrite.READ, ProtReg.STACKPOINTER, RegType.PROTECTED)
+		var = reg(ReadWrite.READ, ProtReg.STACKPOINTER, RegType.PROTECTED)
 	
 	buf(1,var)
 	# lgn.debug("BUFFER:%s" % (bm.blts(var)))
@@ -705,6 +712,7 @@ def execute(set_list, ena_list, gui=False,
 		reg(ReadWrite.WRITE, ProtReg.RAMADDRESS, RegType.PROTECTED, var)
 	if set_list[6]:	#ramd
 		tmp = reg(ReadWrite.READ, ProtReg.RAMADDRESS, RegType.PROTECTED)
+		lgn.debug("RAMD: %s -> %s" % (bm.btd(tmp), bm.blts(var)))
 		ram(ReadWrite.WRITE, bm.btd(tmp), var)
 	if set_list[7]:	#roma
 		reg(ReadWrite.WRITE, ProtReg.ROMADDRESS, RegType.PROTECTED, var)
@@ -811,6 +819,7 @@ def single_instruction(reset=0, gui=False,
 	if _ofs == EmulatorRuntimeError.ILLEGALFUNCTION:
 		return -1
 	
+	lgn.debug("SingleInstruction: MetaFunction: %s, ofs: %s" % (FunctionDefinitionMetaInfo[meta_func], _ofs))
 	# lgn.debug("SingleInstruction: Runtime variables: \n%s" % (instruction_vars))
 	if instruction_vars[RuntimeVariables.LOGICALALU.value][0] == 1:
 		lgn.info("SingleInstruction: ALU Function: %s" % (instruction_vars[RuntimeVariables.FUNCTIONVARIABLE.value]))

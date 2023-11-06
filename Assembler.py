@@ -25,7 +25,7 @@ import math
 import BasicMath as bm
 import logging as lgn			#Logging for custom exceptions
 
-LOGLEVEL = lgn.INFO
+LOGLEVEL = lgn.DEBUG
 
 lgn.basicConfig(format="%(levelname)s: %(message)s", level=lgn.DEBUG)
 lgn.getLogger().setLevel(LOGLEVEL)
@@ -48,7 +48,7 @@ class CustomException(Exception):
 
 function_names = [
 	[	"if" ],
-	[	"rom", "ram", "reg", "stack", "interrupt", "io", ],
+	[	"rom", "ram", "reg", "stack", "interrupt", "io", "call"],
 	[	"compute" ],
 	[	"mark",	"else",	"elif",	"pass", ],
 ]
@@ -61,6 +61,8 @@ tfn = [ "to", "from", ]
 regs = ["gpr","alur","stk","spr"]
 #Jump name
 jump_name = "jump"
+#Keyword to define a function
+define = "def"
 
 function_params = [
 	[	#Setup special parameters, at the moment only if is implemeted, thus only the if operators
@@ -68,11 +70,12 @@ function_params = [
 	],
 	[	#Setup general function parameters, True=types of regs, False=to/from, None=nan (copy user input in general), "pass"=stop checking for parameters
 		[	[True], [None], ["pass"] ],											#rom
-		[	[False],[True], [None], ["pass"] ],									#ram
+		[	[False], [None], [True], [None], ["pass"] ],						#ram
 		[	[True], [None], ["swap", "clone"], [True], [None],["pass"] ],		#reg
-		[	["push","pop"],[True], [None], ["pass"] ],							#stack
+		[	["push","pop", "set", "get"],[True], [None], ["pass"] ],			#stack
 		[	[True], [None], ["pass"] ],											#interrupt
 		[	[False], [None], [True], [None],["pass"] ],							#io
+		[	[None], [False], [None], ["pass"] ],													#call/return function
 	],
 	[	#Setup special device parameters (e.g. ALU)
 		[	[True], [None], ["add","sub","mul","div","and","or","xor","not","shift","","","","","","","compare"],[True],[None],[True],[None],["pass"] ],
@@ -136,6 +139,7 @@ wtf_excp = [
 	sei[0],
 	sei[1],
 	function_names[3][0],
+	define,
 	"",
 ]
 #Function to manage if statements
@@ -200,23 +204,41 @@ def getBinLine( lines, line, marks ):
 	return bin_rel_ln
 	
 #Function to manage if statement order
-def gin( if_marks, ts ):
-	if len( if_marks[ts] ) == 0:
-		return str( ts )
+def gin( marks, ts, f=False ):
+	if f==False:
+		if len( marks[ts] ) == 0:
+			return str( ts )
+		else:
+			ts = int( ts )
+			for j, _ in enumerate( marks ):
+				t = marks[str(ts-j)]
+				if len( t ) == 0:
+					return str( ts-j )
+				else:
+					iint = 1
+					for i, _ in enumerate( t ):
+						if t[str(i)]["0"] == 0:
+							break
+						elif iint == len( t ):
+							return str( ts-j )
+						iint += 1
 	else:
-		ts = int( ts )
-		for j, _ in enumerate( if_marks ):
-			t = if_marks[str(ts-j)]
-			if len( t ) == 0:
-				return str( ts-j )
-			else:
-				iint = 1
-				for i, _ in enumerate( t ):
-					if t[str(i)]["0"] == 0:
-						break
-					elif iint == len( t ):
-						return str( ts-j )
-					iint += 1
+		if len( marks[ts] ) == 0:
+			return str( ts )
+		else:
+			ts = int( ts )
+			for j, _ in enumerate( marks ):
+				t = marks[str(ts-j)]
+				if len( t ) == 0:
+					return str( ts-j )
+				else:
+					iint = 1
+					for i, _ in enumerate( t ):
+						if t[str(i)]["0"] == 0:
+							break
+						elif iint == len( t ):
+							return str( ts-j )
+						iint += 1
 	return str( 0 )
 
 def find_marks(lines: list):
@@ -245,11 +267,13 @@ def find_marks(lines: list):
 	Returns: dict if marks found, dict of if_marks found
 	"""
 	marks = dict()
+	funcs = dict()
 	if_marks = dict()
 	vars = ["","","",""]
 	iml = []
 	for ln, line in enumerate(lines):
 		func = line.split()
+		lgn.debug("FindMarks: func: %s" % (func))
 		try:
 			func_snd = lines[ln+1].split()
 			func_snd_var = func_snd.pop( 0 )
@@ -266,7 +290,10 @@ def find_marks(lines: list):
 			except:
 				vars[i] = None
 		if func_var == function_names[3][0]:
-			marks[vars[0]] = ln 
+			marks[vars[0]] = ln
+		elif func_var == define:
+			lgn.debug("FindMarks: Found definition of function: %s" % (ln))
+			funcs[vars[0]] = dict()
 		elif func_var == function_names[0][0] and func_snd_var != function_names[3][0] and func_snd_var != function_names[3][1] and vars[0] != "jump":
 			if_marks[ str( len( if_marks ) ) ] = dict()
 		elif func_var == function_names[3][1]:
@@ -286,11 +313,16 @@ def find_marks(lines: list):
 			if_marks[ ts ][tss] = {'0': 2, '1': ln}
 		elif func_var == sei[1] and func_snd_var != function_names[3][1] and func_snd_var != function_names[3][2]:
 			ts = str( len( if_marks ) - 1 )
-			ts = gin( if_marks, ts )
-			tss = str( len( if_marks[ ts ] ) )
-			if_marks[ ts ][tss] = {'0': 0, '1': ln}
+			try:
+				ts = gin( if_marks, ts )
+				tss = str( len( if_marks[ ts ] ) )
+			except KeyError:
+				ts = str( len( funcs ) - 1)
+				ts = gin( funcs, ts, True )
+				tss = str( len( funcs[ts] ) )
+			funcs[ ts ][tss] = {'0': 0, '1': ln}
 		ln += 1
-	return marks, if_marks
+	return marks, if_marks, funcs
 
 #Test For Binary Or Hexadicmal
 def tfbh( var ):
@@ -376,7 +408,7 @@ def comp( filename: str, dest_name: str ):
 	bin_ln = 0		#Binary line number
 	il = 0			#If length
 	ignore_ln = []	#Lines to ignore
-	marks, if_marks = find_marks( lines )
+	marks, if_marks, funcs = find_marks( lines )
 	eofln = 0		#End Of File Line
 	
 	lgn.info("%s%s.py: Schön Core Alpha v.0.1.0 Assembler." % (bf, __name__))
@@ -392,9 +424,9 @@ def comp( filename: str, dest_name: str ):
 		1: {
 		
 				0: [4,3,0,1,2,5,6,7],
-				1: [0,5,6,2,3,1,4,7],
+				1: [1,0,2,3,4,5,6,7],
 				2: [2,3,1,4,5,6,7,0],
-				3: [0,5,6,3,4,1,2,7],
+				3: [0,2,3,1,4,5,6,7],
 				4: [0,1,2,3,4,5,6,7],
 				5: [0,1,2,3,4,5,6,7],
 		
@@ -485,7 +517,8 @@ def comp( filename: str, dest_name: str ):
 				try:
 					nextLines[0] = bm.dtb( getBinLine( lines, int( lines[ln_n+1] ), marks ) )
 				except:
-					raise CustomException( "Error: ln %s: Invalid jump counter" % (ln_n + 1))
+					lgn.critical("Jump: Error: ln %s: Invalid jump counter" % (ln_n + 1))
+					raise Exception
 				ln_n += 1
 			else:									#IF
 				il += 1
@@ -495,7 +528,7 @@ def comp( filename: str, dest_name: str ):
 				try:
 					temp_unused_var = lines[ln_n + rel_ln]
 				except Exception:
-					print( "Error: ln " + str( ln_n + 1 ) +": Expected if inscape, got none" )
+					lgn.critical( "Error: ln %s: Expected if inscape, got none" % (str( ln_n + 1 )) )
 					return -1
 				rel_rel_ln = 1
 				
@@ -509,10 +542,6 @@ def comp( filename: str, dest_name: str ):
 					try:
 						temp_unused_var = lines[ln_n + rel_ln + rel_rel_ln].split()
 						temp_func = temp_unused_var.pop( 0 )
-						try:
-							temp_var = temp_unused_var.pop( 0 )
-						except:
-							temp_var = ""
 						try:
 							temp_temp_unused_var = lines[ln_n + rel_ln + rel_rel_ln + 2].split()
 							temp_temp_func = temp_temp_unused_var.pop( 0 )
@@ -533,9 +562,11 @@ def comp( filename: str, dest_name: str ):
 						try:
 							temp_unused_var = lines[ln_n + 1 + rel_rel_ln]
 						except:
-							raise CustomException( "Error: ln %s: Expected if escape, got none, 0" % (ln_n + 1))
+							lgn.critical("If: Error: ln: %s: Expected if escape, got none, 0" % (ln_n + 1))
+							return -1
 					except:
-						raise CustomException( "Error: ln %s: Expected if escape, got none, 0" % (ln_n + 1))
+						lgn.critical("If: Error: ln: %s: Expected if escape, got none, 1" % (ln_n + 1))
+						return -1
 				if temp_temp_func == function_names[3][1] or temp_temp_func == function_names[3][2]:
 					bin_rel_ln += 2
 				
@@ -575,7 +606,8 @@ def comp( filename: str, dest_name: str ):
 					try:
 						bin_vars.append(bm.dtb( getParIndex( [MainType,function_names_index,i], vars[i] ), bvl[i] ))
 					except Exception:
-						raise CustomException("Error: ln %s, Incorrect variable input" % (ln_n + 1))
+						lgn.critical("If: Error: ln: %s: Incorrect variable input" % (ln_n + 1))
+						raise Exception
 
 				for i, e in enumerate(bin_vars):
 					for j, _ in enumerate( e ):
@@ -586,6 +618,66 @@ def comp( filename: str, dest_name: str ):
 			full_binary_function[9:11] = [1,0]
 			bin_rel_ln = getBinLine( lines, marks[func_var], marks )
 			nextLines[0] = bm.dtb( bin_rel_ln )
+		elif func_var in funcs:
+			full_binary_function[0:4] = [1,0,1,0]
+			full_binary_function[12:13] = bm.dtb(regs.index(vars[2]), 2)
+			full_binary_function[13:19] = bm.dtb(int(vars[3]), 5)
+		elif func_var == define:
+			lgn.debug("Define: FOUND.")
+			rel_ln = 1
+			used_in_escape = 1
+			try:
+				temp_unused_var = lines[ln_n + rel_ln]
+			except Exception:
+				lgn.critical("Function definition: ln: %s: Expected function inscape, got none" % (ln_n + 1))
+				raise Exception
+			
+			rel_rel_ln = 1
+			
+			#If binary lines 
+			iblns = {
+				function_names[1][0]: 2,
+				function_names[1][1]: 2,
+				function_names[3][0]: 0
+			}
+			while inline(True, ln_n + 1 + rel_rel_ln, filename, used_in_escape):
+				try:
+					temp_unused_var = lines[ln_n + rel_ln + rel_rel_ln].split()
+					temp_func = temp_unused_var.pop( 0 )
+					try:
+						temp_temp_unused_var = lines[ln_n + rel_ln + rel_rel_ln + 2].split()
+						temp_temp_func = temp_temp_unused_var.pop( 0 )
+					except:
+						temp_temp_func = ""
+					if temp_func in iblns:
+						bin_rel_ln += iblns[temp_func]
+					elif temp_func == sei[0]:
+						used_in_escape += 1
+						bin_rel_ln += 1
+					elif temp_func == sei[1] and used_in_escape > 1:
+						used_in_escape -= 1
+					elif temp_func in marks:
+						bin_rel_ln += 2
+					else:
+						bin_rel_ln += 1
+					rel_rel_ln += 1
+					try:
+						temp_unused_var = lines[ln_n + 1 + rel_rel_ln]
+					except:
+						lgn.critical("If: Error: ln: %s: Expected if escape, got none, 0" % (ln_n + 1))
+						return -1
+				except:
+					lgn.critical("If: Error: ln: %s: Expected if escape, got none, 1" % (ln_n + 1))
+					return -1
+		elif func_var == function_names[1][1]:
+			full_binary_function[0:4] = [1,0,0,0]
+			if vars[0] == "to":
+				full_binary_function[9:11] = [0,1]
+			else:
+				full_binary_function[9:11] = [0,0]
+			full_binary_function[12:13] = bm.dtb(regs.index(vars[2]), 2)
+			full_binary_function[13:19] = bm.dtb(int(vars[3]), 5)
+			nextLines[0] = bm.dtb(int(vars[1]))
 		elif func_var == function_names[1][5]:
 			full_binary_function[0:4] = [0,1,1,0]
 			if vars[0] == "from":
@@ -687,7 +779,11 @@ def comp( filename: str, dest_name: str ):
 					bin_vars.append( [0 for k in range( bvl[j] )] )
 				if func_var == function_names[2][0]:
 					is_alu = 1
-					bin_func = bm.dtb( getParIndex( [2,0,2], vars[2] ), 4 )
+					try:
+						bin_func = bm.dtb( getParIndex( [2,0,2], vars[2] ), 4 )
+					except ValueError:
+						lgn.critical("Compute: ln %s: Error, invalid variables." % (ln_n))
+						raise ValueError
 					if vars[0] == function_params[2][0][2][8]:
 						bin_vars[0] = bm.dtb( 1, bvl[0] )
 					for i, _ in enumerate(bin_vars):
