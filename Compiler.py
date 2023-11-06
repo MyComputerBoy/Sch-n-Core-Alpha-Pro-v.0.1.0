@@ -52,24 +52,32 @@ exeff = BaseCPUInfo.executable_files_folder
 function_names = [
 	"declare",	#0
 	"save",
+	"reg",
+	"stack",
 	"io",
-	"for",
+	"for",		#5
 	"compute",
-	"gl",		#5
-	"rar",
 	"def",
 	"mark",
 	"else",
 	"elif",		#10
-	"srar",
-	"switch",
+]
+
+converted_func_names = [
+	"rom",
+	"ram",
+	"reg",
+	"stack",
+	"interrupt",
+	"io",
+	"call",
 ]
 
 vov = [ 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1 ]
 
 if_name = ["if","irar"]
 
-scn = "case"
+# scn = "case"
 
 alu_funcs = [
 	"+",
@@ -121,17 +129,15 @@ if_names = [
 func_params = [
 	[["0"],["0"]],
 	[["0"],["to","from"],["0"]],
+	[["0"],["swap","clone"],["0"]],
+	[["push","pop"],["0"]],
 	[["input","print"],["0"]],
 	[["0"],["0"],["0"],["0"]],
 	[["0"],["add","sub","mul","div","&","+","(+)","|",">>","","","","","","","compare"],["0"],["0"]],
 	[["0"],["0"],["0"]],
-	[["to","from"],["0"],["0"]],
-	[["0"],["0"],["0"]],
 	[["0"],["0"],["0"]],
 	[],
 	[["0"],[">","==",">=","<","!=","<=","weird","co",">c","==c",">=c","<c","!=c","<=c","jump"],["0"]],
-	[["to","from"],["0"],["0"]],
-	[["0"]],
 ]
 
 func_param_types = [
@@ -150,6 +156,7 @@ func_param_types = [
 	["cop","cop","cop","None","None"],
 ]
 
+#Temporarily deprecated
 lib_funcs = [
 	"sqrt",
 	"pow",
@@ -161,6 +168,7 @@ lib_funcs = [
 	#"ln"
 ]
 
+#DEPRECATED TEMPORARILY
 #Probably defunct built=in library functions for ease of use
 library_functions = [
 	[						#sqrt uses ram address 0 to 5, returns to 2
@@ -361,15 +369,11 @@ def convert_func_var( v ):
 	elif v == function_names[1]:
 		return "ram"
 	elif v == function_names[2]:
-		return "io"
+		return "reg"
 	elif v == function_names[4]:
-		return "compute"
+		return "stack"
 	elif v == function_names[5]:
-		return "gbl"
-	elif v == function_names[6]:
-		return "rar"
-	elif v == function_names[11]:
-		return "rar"
+		return "io"
 	else:
 		return v 
 
@@ -413,7 +417,6 @@ def get_last_for( history ):
 		if history[i-l] == "for":
 			return str( i-l+1 )
 		l += 1
-	return Error
 
 #Find the index for the last function in history
 def get_last_func( history ):
@@ -423,14 +426,12 @@ def get_last_func( history ):
 		if history[i-l] == "func":
 			return str( i-l+1 )
 		l += 1
-	return Error
 
 #Return the index of the current function or -1
 def get_func_num( ln_n, lines, m_func_index, m_func_start_ln, m_a_func_num ):
 	for i in m_func_start_ln:
 		if int( m_func_start_ln[i] ) < ln_n and ln_n < int( m_func_index[i] ):
 			return m_a_func_num[i]
-	return -1
 
 #Change the order of parameters defined by add_info
 def reverseOrder( order, var_one, var_two=None, var_tre=None ):

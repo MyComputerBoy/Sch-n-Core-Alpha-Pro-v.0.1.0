@@ -30,13 +30,6 @@ LOGLEVEL = lgn.DEBUG
 lgn.basicConfig(format="%(levelname)s: %(message)s", level=lgn.DEBUG)
 lgn.getLogger().setLevel(LOGLEVEL)
 
-##########################################################
-#Show advanced infomation
-#To show advanced info, set variable to "yes"
-#Otherwise set it to "no"
-##########################################################
-show_adv_inf = "no"
-
 #Get Basic Info about Simulated CPU and Folders
 bw = BaseCPUInfo.bit_width
 bf = BaseCPUInfo.base_folder
@@ -116,6 +109,7 @@ var_excp = [
 		function_names[0][0],
 		function_names[3][0],
 		function_names[3][2],
+		define
 	],
 ]
 #Get function parameter index
@@ -268,12 +262,14 @@ def find_marks(lines: list):
 	"""
 	marks = dict()
 	funcs = dict()
+	funcs_names = dict()
+	funcs
 	if_marks = dict()
 	vars = ["","","",""]
 	iml = []
 	for ln, line in enumerate(lines):
 		func = line.split()
-		lgn.debug("FindMarks: func: %s" % (func))
+		# lgn.debug("FindMarks: func: %s" % (func))
 		try:
 			func_snd = lines[ln+1].split()
 			func_snd_var = func_snd.pop( 0 )
@@ -293,7 +289,9 @@ def find_marks(lines: list):
 			marks[vars[0]] = ln
 		elif func_var == define:
 			lgn.debug("FindMarks: Found definition of function: %s" % (ln))
-			funcs[vars[0]] = dict()
+			lgn.debug("index: %s" % (len(funcs)))
+			funcs[str(len(funcs))] = dict()
+			funcs_names[vars[0]] = {"index" : len(funcs)}
 		elif func_var == function_names[0][0] and func_snd_var != function_names[3][0] and func_snd_var != function_names[3][1] and vars[0] != "jump":
 			if_marks[ str( len( if_marks ) ) ] = dict()
 		elif func_var == function_names[3][1]:
@@ -317,12 +315,14 @@ def find_marks(lines: list):
 				ts = gin( if_marks, ts )
 				tss = str( len( if_marks[ ts ] ) )
 			except KeyError:
+				lgn.debug("Probably func:")
+				lgn.debug("funcs: %s" % (funcs))
 				ts = str( len( funcs ) - 1)
 				ts = gin( funcs, ts, True )
 				tss = str( len( funcs[ts] ) )
 			funcs[ ts ][tss] = {'0': 0, '1': ln}
 		ln += 1
-	return marks, if_marks, funcs
+	return marks, if_marks, funcs, funcs_names
 
 #Test For Binary Or Hexadicmal
 def tfbh( var ):
@@ -408,7 +408,7 @@ def comp( filename: str, dest_name: str ):
 	bin_ln = 0		#Binary line number
 	il = 0			#If length
 	ignore_ln = []	#Lines to ignore
-	marks, if_marks, funcs = find_marks( lines )
+	marks, if_marks, funcs, funcs_names = find_marks( lines )
 	eofln = 0		#End Of File Line
 	
 	lgn.info("%s%s.py: Schön Core Alpha v.0.1.0 Assembler." % (bf, __name__))
@@ -618,57 +618,14 @@ def comp( filename: str, dest_name: str ):
 			full_binary_function[9:11] = [1,0]
 			bin_rel_ln = getBinLine( lines, marks[func_var], marks )
 			nextLines[0] = bm.dtb( bin_rel_ln )
-		elif func_var in funcs:
+		elif func_var in funcs_names:
 			full_binary_function[0:4] = [1,0,1,0]
-			full_binary_function[12:13] = bm.dtb(regs.index(vars[2]), 2)
-			full_binary_function[13:19] = bm.dtb(int(vars[3]), 5)
-		elif func_var == define:
-			lgn.debug("Define: FOUND.")
-			rel_ln = 1
-			used_in_escape = 1
 			try:
-				temp_unused_var = lines[ln_n + rel_ln]
-			except Exception:
-				lgn.critical("Function definition: ln: %s: Expected function inscape, got none" % (ln_n + 1))
-				raise Exception
-			
-			rel_rel_ln = 1
-			
-			#If binary lines 
-			iblns = {
-				function_names[1][0]: 2,
-				function_names[1][1]: 2,
-				function_names[3][0]: 0
-			}
-			while inline(True, ln_n + 1 + rel_rel_ln, filename, used_in_escape):
-				try:
-					temp_unused_var = lines[ln_n + rel_ln + rel_rel_ln].split()
-					temp_func = temp_unused_var.pop( 0 )
-					try:
-						temp_temp_unused_var = lines[ln_n + rel_ln + rel_rel_ln + 2].split()
-						temp_temp_func = temp_temp_unused_var.pop( 0 )
-					except:
-						temp_temp_func = ""
-					if temp_func in iblns:
-						bin_rel_ln += iblns[temp_func]
-					elif temp_func == sei[0]:
-						used_in_escape += 1
-						bin_rel_ln += 1
-					elif temp_func == sei[1] and used_in_escape > 1:
-						used_in_escape -= 1
-					elif temp_func in marks:
-						bin_rel_ln += 2
-					else:
-						bin_rel_ln += 1
-					rel_rel_ln += 1
-					try:
-						temp_unused_var = lines[ln_n + 1 + rel_rel_ln]
-					except:
-						lgn.critical("If: Error: ln: %s: Expected if escape, got none, 0" % (ln_n + 1))
-						return -1
-				except:
-					lgn.critical("If: Error: ln: %s: Expected if escape, got none, 1" % (ln_n + 1))
-					return -1
+				full_binary_function[12:13] = bm.dtb(regs.index(vars[0]), 2)
+				full_binary_function[13:19] = bm.dtb(int(vars[1]), 5)
+			except ValueError:
+				lgn.critical("Call %s: Error: invalid variables." % (func_var))
+				return -1
 		elif func_var == function_names[1][1]:
 			full_binary_function[0:4] = [1,0,0,0]
 			if vars[0] == "to":
@@ -730,7 +687,7 @@ def comp( filename: str, dest_name: str ):
 					nextLines[2] = bm.dtb( getBinLine( lines, t[str(tn+1)]["1"] + 2, marks ) )
 			if nextLines[0] == None:
 				raise CustomException("Error: ln %s: if statement was not encoded right, 1" % (ln_n + 1))
-		elif func_var == sei[1] and sfunc_var != function_names[3][1] and sfunc_var != function_names[3][2]:
+		elif func_var == sei[1] and sfunc_var != function_names[3][1] and sfunc_var != function_names[3][2] and sfunc_var in funcs_names:
 			il -= 1
 		elif func_var in sei or func_var == function_names[3][0] or func_var == "":
 			pass
@@ -812,6 +769,8 @@ def comp( filename: str, dest_name: str ):
 								nextLines[0] = bm.dtb( int( vars[3] ) )
 							except Exception:
 								raise CustomException("Error: ln %s: 4th variable missing." % (ln_n + 1))
+						elif func_var == define:
+							ln_n += 1
 				
 				full_binary_function[4] = is_alu
 				
