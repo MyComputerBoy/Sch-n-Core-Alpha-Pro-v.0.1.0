@@ -1,6 +1,6 @@
-"""uac.py -> Higher level compiler for Schön Core Delta v.0.5.0
+"""Compiler.py -> Higher level compiler for Schön Core Alpha v.0.1.0
 
-My own proprietary mid level language for my own CPU Schön Core Delta v.0.5.0
+My own proprietary mid level language for my own CPU Schön Core Alpha v.0.1.0
 Major non-user functions:
 
 warning_on_one_line(message, category, filename, lineno, file=None, line=None) -> Function to create warning on a single line on command line interface
@@ -21,9 +21,15 @@ pse_han_specs(  funcies,
 				m_func_start_ln, 
 				m_a_func_num, 
 				user_vars): -> Intermediate logical iteration for generating higher level meta info
+
+Major user functions:
+
+
+Compile((filename: str, dest_name: str) -> Function to call for cimpilation of filename to dest_name
+
 """
 
-#Schön Compiler for Schön Core Delta v.0.5.0
+#Schön Compiler for Schön Core Alpha v.0.1.0
 
 
 def pl( lst ):
@@ -1116,8 +1122,8 @@ def pse_han_specs(funcies, lines, m_for_index, funcs, m_func_index, marks, if_ma
 	return lines, for_lines, for_index, funcs, func_index, history, divided_user_vars
 
 #The final compilation of the program
-def comp(filename: str, dest_name: str):
-	"""comp(filename: str, dest_name: str) -> Higher level compiler for Schön Core Delta v.0.5.0
+def Compile(filename: str, dest_name: str):
+	"""Compile(filename: str, dest_name: str) -> Higher level compiler for Schön Core Delta v.0.5.0
 	Parameters:
 	
 	filename: Name of .schon5 file for compilation
@@ -1129,7 +1135,7 @@ def comp(filename: str, dest_name: str):
 	lines = fh.readlines()
 	fh.close()
 	
-	fh = open( bf + pf + dest_name + ".s5", "w+" )
+	fh = open( bf + pf + dest_name + ".s1", "w+" )
 	
 	ev = []		#End of file Variables
 	ieep = True	#False: skip all writing to file, True: write to file

@@ -7,9 +7,8 @@ but referencing them they're defined as [index,type]
 
 Major functions:
 
-initialize_rom() -> initializes Read Only Memory by reading file given at "rom/fn.txt" and writes the data to rom_data
+initialize_rom() -> initializes Read Only Memory by reading file and writes the data to rom_data
 reg(rw, index, reg_type, value=None, preset=None) -> Handles register read/write
-rar(rw, index, reg_type, value=None) -> Handles register associated register
 
 alu() -> executes arithmetic and logic operations based on flags set and registers
 
@@ -258,12 +257,12 @@ def alu():		#//Update for new ALU
 	else:
 		comp = [0,0,1]
 	q = []
-	if func == "0000" and ena_list[ALUConfig.DECREMENT.value] == 0 or ena_list[ALUConfig.INCREMENT.value]:		#Addition
-		lgn.info("ALU: ADD")
-		lgn.info("Variable a: %s, b: %s" % (bm.btd(num_a), bm.btd(num_b)))
+	if func == "0000" and 
+		ena_list[ALUConfig.DECREMENT.value] == 0 or 
+		ena_list[ALUConfig.INCREMENT.value]:	#Addition
 		q, co = g.la(num_a, num_b)
-	elif func == "1000" or ena_list[ALUConfig.DECREMENT.value]:	#Subraction
-		lgn.info("ALU: SUB")
+	elif func == "1000" or 
+		ena_list[ALUConfig.DECREMENT.value]:	#Subraction
 		q, co = g.ls(num_a, num_b)
 	elif func == "0100":	#Multiplication
 		q = g.mul(num_a, num_b)
@@ -292,7 +291,7 @@ def alu():		#//Update for new ALU
 		raise Exception
 	
 	comp.append(co)
-	lgn.info(comp)
+	lgn.info("ALU: %s" % (comp))
 	reg(ReadWrite.WRITE, ProtReg.AOR, RegType.PROTECTED, q)
 	if set_list[ALUConfig.SETFLAGS.value]:
 		reg(ReadWrite.WRITE, ProtReg.FLAGS, RegType.PROTECTED, comp)

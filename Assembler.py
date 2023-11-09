@@ -1,6 +1,6 @@
-"""uc.py -> Updated assembler for Schön Core Delta v.0.5.0
+"""Assembler.py -> Updated assembler for Schön Core Alpha v.0.1.0
 
-My own proprietary low level language for my CPU Schön Core Delta v.0.5.0
+My own proprietary low level language for my CPU Schön Core Alpha v.0.1.0
 Major non-user functions:
 
 inline(bool, line, filename, used_in_escape) -> Handles if statements
@@ -11,11 +11,11 @@ get_var_order(MainType: int, FuncNum: int, BVL: list, BVI: list, ReorderDict: di
 
 Major user functions:
 
-comp(filename: str, dest_name: str) -> Function to call for assembly of filename to dest_name, dest_name automatically apllies ".schonexe" postfix
+Assemble(filename: str, dest_name: str) -> Function to call for assembly of filename to dest_name, dest_name automatically apllies ".schonexe" postfix
 
 """
 
-#Schön Assembler for Schön Core Delta v.0.5.0
+#Schön Assembler for Schön Core Alpha v.0.1.0
 
 
 import BaseCPUInfo
@@ -388,8 +388,8 @@ def _GetBinLine_(filename: str, ln: int):
 	
 	return getBinLine(lines, ln, marks)
 
-def comp( filename: str, dest_name: str ):
-	"""comp(filename: str, dest_name: str) -> Function to call for assembly of filename to dest_name, dest_name automatically apllies ".schonexe" postfix
+def Assemble( filename: str, dest_name: str ):
+	"""Assemble(filename: str, dest_name: str) -> Function to call for assembly of filename to dest_name, dest_name automatically apllies ".schonexe" postfix
 	Parameters:
 	
 	filename: name of file with path relative to the folder of the file unless specified so
@@ -400,10 +400,13 @@ def comp( filename: str, dest_name: str ):
 	
 	lgn.getLogger().setLevel(LOGLEVEL)
 	
+	#Open and read file to assemble
 	fh = open( bf + pf + filename )
 	lines = fh.readlines()
 	fh.close()
 	fh = open( bf + exeff + dest_name + ".schonexe1", "w+" )
+	
+	#Basic variable initiation
 	ln_n = 0		#Line number
 	bin_ln = 0		#Binary line number
 	il = 0			#If length
@@ -443,6 +446,7 @@ def comp( filename: str, dest_name: str ):
 	_StaticBinVarLength_ = [ 4, 2, 2, 5, 2, 5, 2, 5 ]
 	_StaticBinVarIndex_ = [ 5, 9, 11, 13, 18, 20, 25, 27 ]
 	
+	#Main loop for assembling
 	for i in lines:
 		if eof in i:
 			break 
@@ -458,7 +462,7 @@ def comp( filename: str, dest_name: str ):
 		try:
 			sline = lines[ln_n+1].split()
 			sfunc_var = sline.pop( 0 )
-		except:
+		except IndexError:
 			sfunc_var = None
 		full_binary_function = [0 for i in range( bw )]
 		nextLines = [None,None,None]
@@ -618,14 +622,6 @@ def comp( filename: str, dest_name: str ):
 			full_binary_function[9:11] = [1,0]
 			bin_rel_ln = getBinLine( lines, marks[func_var], marks )
 			nextLines[0] = bm.dtb( bin_rel_ln )
-		# elif func_var in funcs_names:
-			# full_binary_function[0:4] = [1,0,1,0]
-			# try:
-				# full_binary_function[12:13] = bm.dtb(regs.index(vars[0]), 2)
-				# full_binary_function[13:19] = bm.dtb(int(vars[1]), 5)
-			# except ValueError:
-				# lgn.critical("Call %s: Error: invalid variables." % (func_var))
-				# return -1
 		elif func_var == function_names[1][1]:
 			full_binary_function[0:4] = [1,0,0,0]
 			if vars[0] == "to":

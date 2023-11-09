@@ -7,6 +7,6 @@ executable_files_folder -> Relative folder in which the executables are stored i
 """
 
 bit_width = 32																			#The width of the word
-base_folder = "C:/Users/hatel/Documents/GitHub/Sch-n-Core-Alpha-Pro-v.0.1.0/"	#The lowest commom folder
+base_folder = "C:/Users/Kim Chemnitz/Documents/GitHub/Sch-n-Core-Alpha-Pro-v.0.1.0/"	#The lowest commom folder
 programs_folder = "Documents/"															#Which folder where non compiled programs is to be found
 executable_files_folder = "Programs/"													#The folder where compiled programs is to be found 

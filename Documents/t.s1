@@ -8,40 +8,30 @@ rom gpr 3 0
 compute gpr 1 compare gpr 3 gpr 3
 if ==
 {
-rom gpr 0 1
-io to 10 gpr 0
 add 
 }
 rom gpr 3 1
 compute gpr 1 compare gpr 3 gpr 3
 if ==
 {
-rom gpr 0 2
-io to 10 gpr 0
 sub
 }
 rom gpr 3 2
 compute gpr 1 compare gpr 3 gpr 3
 if ==
 {
-rom gpr 0 3
-io to 10 gpr 0
 mul 
 }
 rom gpr 3 3
 compute gpr 1 compare gpr 3 gpr 3
 if ==
 {
-rom gpr 0 4
-io to 10 gpr 0
 div 
 }
 rom gpr 3 4
 compute gpr 1 compare gpr 3 gpr 3
 if ==
 {
-rom gpr 0 5
-io to 10 gpr 0
 eof_mark
 }
 mark loop_end
