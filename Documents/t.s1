@@ -43,26 +43,26 @@ eof
 mark add
 stack pop gpr 0
 stack pop gpr 1
-compute gpr 1 add gpr 0 gpr 2
+compute gpr 1 add gpr 0 gpr 2 float
 stack push gpr 2
 loop_end
 mark sub
 stack pop gpr 0
 stack pop gpr 1
-compute gpr 1 sub gpr 0 gpr 2
+compute gpr 1 sub gpr 0 gpr 2 float
 stack push gpr 2
 loop_end
 mark mul
 stack pop gpr 0
 stack pop gpr 1
-compute gpr 1 mul gpr 0 gpr 2
+compute gpr 1 mul gpr 0 gpr 2 float
 stack push gpr 2
 loop_end
 mark div
 stack pop gpr 0
 stack pop gpr 1
 rom gpr 2 1000
-compute gpr 1 mul gpr 2 gpr 1
-compute gpr 1 div gpr 0 gpr 2
+compute gpr 1 mul gpr 2 gpr 1 float
+compute gpr 1 div gpr 0 gpr 2 float
 stack push gpr 2
 loop_end

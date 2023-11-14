@@ -73,6 +73,14 @@ def la(la, lb, ci=0):
 		ci = 1
 	return bm.dtb(tq), ci
 
+def ula(la, lb, ci=0):
+	a = bm.user_btd(la)
+	b = bm.user_btd(lb)
+	tq = a + b + ci
+	if m.sqrt(tq**2) >= 2**bw:
+		ci = 1
+	return bm.user_dtb(tq), ci
+
 def ls(la, lb, ci=0):
 	a = bm.btd(la)
 	b = bm.btd(nl(lb))
@@ -82,12 +90,28 @@ def ls(la, lb, ci=0):
 		ci = 1
 	return bm.dtb(tq), ci
 
+def uls(la, lb, ci=0):
+	a = bm.user_btd(la)
+	b = bm.user_btd(lb)
+	tq = a - b + ci
+	if m.sqrt(tq**2) >= 2**bw:
+		ci = 1
+	return bm.user_dtb(tq), ci
 def mul(al, bl):
 	a = bm.btd(al)
 	b = bm.btd(bl)
 	return bm.dtb(a * b)
+def umul(al, bl):
+	a = bm.user_btd(al)
+	b = bm.user_btd(bl)
+	return bm.user_dtb(a * b)
 
 def div(al, bl):
 	a = bm.btd(al)
 	b = bm.btd(bl)
 	return bm.dtb(m.floor(a / b))
+
+def udiv(al, bl):
+	a = bm.user_btd(al)
+	b = bm.user_btd(bl)
+	return bm.user_dtb(m.floor(a / b))

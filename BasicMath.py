@@ -16,6 +16,38 @@ def dtb( int, l=bw ):
 		int = m.floor( int/2 )
 	return q
 
+def user_dtb(input, l=bw):
+	#Handle different inputs
+	q = []
+	sign = 1
+	if input < 0:
+		sign = 0
+		input *= -1
+	
+	if input == 0:
+		exponent = 255
+	else:
+		try:
+			exponent = 255-m.floor(m.log(input, 2))
+		except ValueError:
+			print("Deciman to binary: Error: Domain error.")
+			raise ValueError
+	
+	#Manage proper exponent and mantissa
+	
+	mantissa = int(int(2**21*input)/int(2**(255-exponent)))
+	
+	#Append to q
+	q.append(sign)
+	output_exponent = dtb(exponent, 8)
+	output_mantissa = dtb(mantissa, 23)
+	for i, e in enumerate(output_exponent):
+		q.append(e)
+	for i, e in enumerate(output_mantissa):
+		q.append(e)
+	
+	return q
+
 #Convert binary list to floating point
 def btd( list, leng = bw ):
 	q = 0
@@ -25,6 +57,21 @@ def btd( list, leng = bw ):
 		except Exception:
 			q += 0
 	return q
+
+def user_btd( input, l=bw ):
+	q = 0
+	try:
+		sign = input[0]
+		exponent = input[1:9]
+		mantissa = input[9:32]
+	except IndexError:
+		return 0
+	
+	v = 2**(256-btd(exponent))*(btd(mantissa)/(2**22))
+	
+	if sign == 1:
+		return v
+	return -v
 
 #Bitwise reverse list
 def reverse( list ):

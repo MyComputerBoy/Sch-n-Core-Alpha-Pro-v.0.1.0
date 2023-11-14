@@ -71,7 +71,7 @@ function_params = [
 		[	[None], [False], [None], ["pass"] ],													#call/return function
 	],
 	[	#Setup special device parameters (e.g. ALU)
-		[	[True], [None], ["add","sub","mul","div","and","or","xor","not","shift","","","","","","","compare"],[True],[None],[True],[None],["pass"] ],
+		[	[True], [None], ["add","sub","mul","div","and","or","xor","not","shift","","","","","","","compare"],[True],[None],[True],[None],["pass"], ["float"] ],
 	],
 	[
 		[	[None] ],
@@ -94,7 +94,7 @@ function_var_amount = [
 		4,
 	],
 	[
-		[ 8 ],
+		[ 9 ],
 	],
 ]
 #EOF indicator name
@@ -747,6 +747,8 @@ def Assemble( filename: str, dest_name: str ):
 					except ValueError:
 						lgn.critical("Compute: ln %s: Error, invalid variables." % (ln_n + 1))
 						return -1
+					if vars[8] == "float":
+						full_binary_function[10] = 1
 				else:
 					is_alu = 0
 					function_names_index = function_names[MainType].index( func_var )

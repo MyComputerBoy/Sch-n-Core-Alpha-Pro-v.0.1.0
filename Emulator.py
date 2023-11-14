@@ -28,7 +28,7 @@ import time
 import logging as lgn			#Logging for custom exceptions
 from enum import Enum
 
-LOGLEVEL = lgn.WARNING
+LOGLEVEL = lgn.DEBUG
 
 lgn.basicConfig(format="%(levelname)s: %(message)s", level=lgn.DEBUG)
 lgn.getLogger().setLevel(LOGLEVEL)
@@ -229,10 +229,12 @@ def alu():		#//Update for new ALU
 	"""alu() -> executes arithmetic and logic operations based on flags set and registers
 	Returns: return code: 1 for function completed succesfully or passes any errors
 	"""
+	
 	global reg
 	spec_func_var = reg(ReadWrite.READ, ALUConfig.SPECIALFUNCTION, RegType.PROTECTED)
 	ena_list = reg(ReadWrite.READ, ProtReg.ENABLELIST, RegType.PROTECTED)
 	set_list = reg(ReadWrite.READ, ProtReg.SETLIST, RegType.PROTECTED)
+	spec_func = reg(ReadWrite.READ, ALUConfig.SPECIALFUNCTION, RegType.PROTECTED)
 	ln = reg(ReadWrite.READ, ProtReg.PROGRAMCOUNTER, RegType.PROTECTED)
 	num_a = buf(0)
 	
@@ -257,38 +259,50 @@ def alu():		#//Update for new ALU
 	else:
 		comp = [0,0,1]
 	q = []
-	if func == "0000" and 
-		ena_list[ALUConfig.DECREMENT.value] == 0 or 
-		ena_list[ALUConfig.INCREMENT.value]:	#Addition
-		q, co = g.la(num_a, num_b)
-	elif func == "1000" or 
-		ena_list[ALUConfig.DECREMENT.value]:	#Subraction
-		q, co = g.ls(num_a, num_b)
-	elif func == "0100":	#Multiplication
-		q = g.mul(num_a, num_b)
-	elif func == "1100":	#Divivision
-		q = g.div(num_a, num_b)
-	elif func == "0010":	#Logical and
-		q = g.al(num_a, num_b)
-	elif func == "1010":	#Logical or
-		q = g.ol(num_a, num_b)
-	elif func == "0110":	#Logical exclusive or
-		q = g.xl(num_a, num_b)
-	elif func == "1110":	#Logical not
-		q = g.nl(num_a)
-	elif func == "0001":	#Logical shift
-		if bm.btd(spec_func_var) == 1:
-			q, co = shift(num_b, bm.btd(num_a), 0)
-		else:
-			q, co = shift(num_b, bm.btd(num_a))
-	elif func == "1111":	#Compare
-		lgn.info("ALU: CMP")
-		q = num_b
-		lgn.info("ALU: %s cmp %s" % (bm.btd(num_a), bm.btd(num_b)))
-		lgn.info("CMP: %s" % (bm.blts(comp)))
-	else:					#Error
-		lgn.critical("ALU: Invalid function call at line %s" % (bm.btd(ln)))
-		raise Exception
+	if spec_func[0] == 1:
+		lgn.debug("ALU: FLOAT.")
+		if func == "0000":
+			q, co = g.ula(num_a, num_b)
+		elif func == "1000":	#Subraction
+			q, co = g.uls(num_a, num_b)
+		elif func == "0100":	#Multiplication
+			q = g.umul(num_a, num_b)
+		elif func == "1100":	#Divivision
+			q = g.udiv(num_a, num_b)
+		else:					#Error
+			lgn.critical("ALU: Invalid function call at line %s" % (bm.btd(ln)))
+			lgn.info("ALU: Function: %s" % (bm.blts(func)))
+			raise Exception
+	else:
+		if func == "0000" and ena_list[ALUConfig.DECREMENT.value] == 0 or ena_list[ALUConfig.INCREMENT.value]:	#Addition
+			q, co = g.la(num_a, num_b)
+		elif func == "1000" or ena_list[ALUConfig.DECREMENT.value]:	#Subraction
+			q, co = g.ls(num_a, num_b)
+		elif func == "0100":	#Multiplication
+			q = g.mul(num_a, num_b)
+		elif func == "1100":	#Divivision
+			q = g.div(num_a, num_b)
+		elif func == "0010":	#Logical and
+			q = g.al(num_a, num_b)
+		elif func == "1010":	#Logical or
+			q = g.ol(num_a, num_b)
+		elif func == "0110":	#Logical exclusive or
+			q = g.xl(num_a, num_b)
+		elif func == "1110":	#Logical not
+			q = g.nl(num_a)
+		elif func == "0001":	#Logical shift
+			if bm.btd(spec_func_var) == 1:
+				q, co = shift(num_b, bm.btd(num_a), 0)
+			else:
+				q, co = shift(num_b, bm.btd(num_a))
+		elif func == "1111":	#Compare
+			lgn.info("ALU: CMP")
+			q = num_b
+			lgn.info("ALU: %s cmp %s" % (bm.btd(num_a), bm.btd(num_b)))
+			lgn.info("CMP: %s" % (bm.blts(comp)))
+		else:					#Error
+			lgn.critical("ALU: Invalid function call at line %s" % (bm.btd(ln)))
+			raise Exception
 	
 	comp.append(co)
 	lgn.info("ALU: %s" % (comp))
@@ -681,7 +695,7 @@ def execute(set_list, ena_list, gui=False,
 	if ena_list[7]:		#Register intermediate data
 		var = reg(ReadWrite.READ, ProtReg.REGINTERMEDIATE, RegType.PROTECTED)
 	if ena_list[8]:		#gpi 
-		var = bm.dtb(int(input("Number: ")))
+		var = bm.user_dtb(int(input("Number: ")))
 	if ena_list[9]:		#rega 
 		lgn.debug("Execute: REGB: %s:%s" % (reg_a[0], reg_a[1]))
 		var = reg(ReadWrite.READ, reg_a[0], reg_a[1])
@@ -833,6 +847,7 @@ def single_instruction(reset=0, gui=False,
 	if instruction_vars[RuntimeVariables.LOGICALALU.value][0] == 1:
 		lgn.info("SingleInstruction: ALU Function: %s" % (instruction_vars[RuntimeVariables.FUNCTIONVARIABLE.value]))
 		reg(ReadWrite.WRITE, ALUConfig.ALUFUNCTION, RegType.ALU, instruction_vars[RuntimeVariables.FUNCTIONVARIABLE.value])
+		reg(ReadWrite.WRITE, ALUConfig.SPECIALFUNCTION, RegType.PROTECTED, instruction_vars[RuntimeVariables.VARIABLEB.value])
 	for i, _ in enumerate(FunctionDefinitions[0][_ofs]):
 		lgn.debug("RUN: %s" % (i))
 		execute(FunctionDefinitions[0][_ofs][i], 
