@@ -26,6 +26,8 @@ rom gpr 3 3
 compute gpr 1 compare gpr 3 gpr 3
 if ==
 {
+rom gpr 0 123456
+io to 0 gpr 0
 div 
 }
 rom gpr 3 4

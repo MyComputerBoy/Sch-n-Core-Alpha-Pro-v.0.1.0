@@ -237,6 +237,7 @@ def alu():		#//Update for new ALU
 	spec_func = reg(ReadWrite.READ, ALUConfig.SPECIALFUNCTION, RegType.PROTECTED)
 	ln = reg(ReadWrite.READ, ProtReg.PROGRAMCOUNTER, RegType.PROTECTED)
 	num_a = buf(0)
+	lgn.debug("ALU: ALU A Register: %s" % (bm.user_btd(num_a)))
 	
 	if ena_list[ALUConfig.PROGRAMCOUNTERINCREMENT.value] or ena_list[ALUConfig.INCREMENT.value] or ena_list[ALUConfig.DECREMENT.value]:
 		num_b = bm.dtb(1)
@@ -268,7 +269,12 @@ def alu():		#//Update for new ALU
 		elif func == "0100":	#Multiplication
 			q = g.umul(num_a, num_b)
 		elif func == "1100":	#Divivision
-			q = g.udiv(num_a, num_b)
+			try:
+				q = g.udiv(num_a, num_b)
+			except ZeroDivisionError:
+				lgn.critical("ALU: Error: Can't divide by zero.")
+				lgn.info("Zero division at line %s." % (bm.btd(ln)))
+				raise ZeroDivisionError
 		else:					#Error
 			lgn.critical("ALU: Invalid function call at line %s" % (bm.btd(ln)))
 			lgn.info("ALU: Function: %s" % (bm.blts(func)))
@@ -281,7 +287,12 @@ def alu():		#//Update for new ALU
 		elif func == "0100":	#Multiplication
 			q = g.mul(num_a, num_b)
 		elif func == "1100":	#Divivision
-			q = g.div(num_a, num_b)
+			try:
+				q = g.div(num_a, num_b)
+			except ZeroDivisionError:
+				lgn.critical("ALU: Error: Can't divide by zero.")
+				lgn.info("Zero division at line %s." % (bm.btd(ln)))
+				raise ZeroDivisionError
 		elif func == "0010":	#Logical and
 			q = g.al(num_a, num_b)
 		elif func == "1010":	#Logical or
@@ -307,9 +318,11 @@ def alu():		#//Update for new ALU
 	comp.append(co)
 	lgn.info("ALU: %s" % (comp))
 	reg(ReadWrite.WRITE, ProtReg.AOR, RegType.PROTECTED, q)
+	lgn.debug("AOR: %s" % (bm.user_btd(q)))
 	if set_list[ALUConfig.SETFLAGS.value]:
 		reg(ReadWrite.WRITE, ProtReg.FLAGS, RegType.PROTECTED, comp)
 	return 1
+	# return 1
 
 def pci():
 	ena_list = reg(ReadWrite.READ, ProtReg.ENABLELIST, RegType.PROTECTED)
@@ -366,7 +379,7 @@ def pr(lst, gui=False):#Print function
 	elif gui == "bin":
 		print(bm.btbs(lst))
 	else:
-		print("Output: " + str(bm.btd(lst)))
+		print("Output: " + str(bm.user_btd(lst)))
 
 #Defining the functions pin outputs
 FunctionDefinitions = [
@@ -680,6 +693,10 @@ def execute(set_list, ena_list, gui=False,
 		var = reg(ReadWrite.READ, ProtReg.PROGRAMCOUNTER, RegType.PROTECTED)
 	if ena_list[2]:		#aor 
 		var = reg(ReadWrite.READ, ProtReg.AOR, RegType.PROTECTED)
+	if ena_list[3]:		#Increment
+		alu()
+	if ena_list[4]:		#Decrement
+		alu()
 	if ena_list[5]:		#ramd 
 		tmp = reg(ReadWrite.READ, ProtReg.RAMADDRESS, RegType.PROTECTED)
 		var = ram(ReadWrite.READ, bm.btd(tmp), "RAMD ENABLE EXECUTE()")
@@ -695,9 +712,9 @@ def execute(set_list, ena_list, gui=False,
 	if ena_list[7]:		#Register intermediate data
 		var = reg(ReadWrite.READ, ProtReg.REGINTERMEDIATE, RegType.PROTECTED)
 	if ena_list[8]:		#gpi 
-		var = bm.user_dtb(int(input("Number: ")))
+		var = bm.user_dtb(float(input("Number: ")))
 	if ena_list[9]:		#rega 
-		lgn.debug("Execute: REGB: %s:%s" % (reg_a[0], reg_a[1]))
+		lgn.debug("Execute: REGA: %s:%s" % (reg_a[0], reg_a[1]))
 		var = reg(ReadWrite.READ, reg_a[0], reg_a[1])
 	if ena_list[10]:	#regb 
 		lgn.debug("Execute: REGB: %s:%s" % (reg_b[0], reg_b[1]))
@@ -715,7 +732,7 @@ def execute(set_list, ena_list, gui=False,
 		reg(ReadWrite.WRITE, ProtReg.PROGRAMCOUNTER, RegType.PROTECTED, var)
 	if set_list[2]:	#abr
 		temp = buf(0)
-		lgn.debug("Execute: ALU B Register: %s" % (bm.btd(temp)))
+		lgn.debug("Execute: ALU B Register: %s" % (bm.user_btd(temp)))
 		reg(ReadWrite.WRITE, ALUConfig.BREGISTER, RegType.ALU, var)
 	if set_list[3]:	#conditional branch
 		comparison = reg(ReadWrite.READ, ProtReg.FLAGS, RegType.PROTECTED)
@@ -735,7 +752,7 @@ def execute(set_list, ena_list, gui=False,
 		reg(ReadWrite.WRITE, ProtReg.RAMADDRESS, RegType.PROTECTED, var)
 	if set_list[6]:	#ramd
 		tmp = reg(ReadWrite.READ, ProtReg.RAMADDRESS, RegType.PROTECTED)
-		lgn.debug("RAMD: %s -> %s" % (bm.btd(tmp), bm.blts(var)))
+		lgn.debug("RAMD: %s -> %s" % (bm.btd(tmp), bm.user_btd(var)))
 		ram(ReadWrite.WRITE, bm.btd(tmp), var)
 	if set_list[7]:	#roma
 		reg(ReadWrite.WRITE, ProtReg.ROMADDRESS, RegType.PROTECTED, var)
@@ -759,6 +776,7 @@ def execute(set_list, ena_list, gui=False,
 	if set_list[15]:	#cui
 		reg(ReadWrite.WRITE, ProtReg.CONTROLUNITINPUT, RegType.PROTECTED, var)
 	if set_list[16]:	#sp
+		lgn.debug("Stack pointer WRITE: %s" % (bm.btd(var)))
 		reg(ReadWrite.WRITE, ProtReg.STACKPOINTER, RegType.PROTECTED, var)
 	if set_list[0]:
 		pci()
@@ -848,6 +866,9 @@ def single_instruction(reset=0, gui=False,
 		lgn.info("SingleInstruction: ALU Function: %s" % (instruction_vars[RuntimeVariables.FUNCTIONVARIABLE.value]))
 		reg(ReadWrite.WRITE, ALUConfig.ALUFUNCTION, RegType.ALU, instruction_vars[RuntimeVariables.FUNCTIONVARIABLE.value])
 		reg(ReadWrite.WRITE, ALUConfig.SPECIALFUNCTION, RegType.PROTECTED, instruction_vars[RuntimeVariables.VARIABLEB.value])
+	else:
+		reg(ReadWrite.WRITE, ALUConfig.ALUFUNCTION, RegType.ALU, bm.dtb(0, 4))
+		reg(ReadWrite.WRITE, ALUConfig.SPECIALFUNCTION, RegType.PROTECTED, bm.dtb(2))
 	for i, _ in enumerate(FunctionDefinitions[0][_ofs]):
 		lgn.debug("RUN: %s" % (i))
 		execute(FunctionDefinitions[0][_ofs][i], 

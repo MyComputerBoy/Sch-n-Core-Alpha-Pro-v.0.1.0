@@ -25,7 +25,7 @@ import math
 import BasicMath as bm
 import logging as lgn			#Logging for custom exceptions
 
-LOGLEVEL = lgn.INFO
+LOGLEVEL = lgn.DEBUG
 
 lgn.basicConfig(format="%(levelname)s: %(message)s", level=lgn.DEBUG)
 lgn.getLogger().setLevel(LOGLEVEL)
@@ -71,7 +71,7 @@ function_params = [
 		[	[None], [False], [None], ["pass"] ],													#call/return function
 	],
 	[	#Setup special device parameters (e.g. ALU)
-		[	[True], [None], ["add","sub","mul","div","and","or","xor","not","shift","","","","","","","compare"],[True],[None],[True],[None],["pass"], ["float"] ],
+		[	[True], [None], ["add","sub","mul","div","and","or","xor","not","shift","","","","","","","compare"],[True],[None],[True],[None],[None, "float"], ["pass"] ],
 	],
 	[
 		[	[None] ],
@@ -622,6 +622,11 @@ def Assemble( filename: str, dest_name: str ):
 			full_binary_function[9:11] = [1,0]
 			bin_rel_ln = getBinLine( lines, marks[func_var], marks )
 			nextLines[0] = bm.dtb( bin_rel_ln )
+		elif func_var == function_names[1][0]:
+			full_binary_function[0:4] = [0,0,0,0]
+			full_binary_function[12:13] = bm.dtb(regs.index(vars[0]), 2)
+			full_binary_function[13:19] = bm.dtb(int(vars[1]), 5)
+			nextLines[0] = bm.user_dtb(float(vars[2]))
 		elif func_var == function_names[1][1]:
 			full_binary_function[0:4] = [1,0,0,0]
 			if vars[0] == "to":
@@ -739,16 +744,24 @@ def Assemble( filename: str, dest_name: str ):
 						return -1
 					if vars[0] == function_params[2][0][2][8]:
 						bin_vars[0] = bm.dtb( 1, bvl[0] )
-					try:
-						for i, _ in enumerate(bin_vars):
-							if getParIndex( [2,0,i], vars[i] ) == "pass":
+					# try:
+					for i, _ in enumerate(bin_vars):
+						print(vars[i])
+						if i == 7:
+							try:
+								if vars[7] == "float":
+									bin_vars[3] = [1,0]
+									break
+								# bin_vars[i] = bm.dtb(getParIndex( [2,0,i], vars[i] ), bvl[i])
+							except Exception:
 								break
+						elif getParIndex( [2,0,i], vars[i] ) == "pass":
+							break
+						else:
 							bin_vars[i] = bm.dtb( getParIndex( [2,0,i], vars[i] ), bvl[i] )
-					except ValueError:
-						lgn.critical("Compute: ln %s: Error, invalid variables." % (ln_n + 1))
-						return -1
-					if vars[8] == "float":
-						full_binary_function[10] = 1
+					# except ValueError:
+						# lgn.critical("Compute: ln %s: Error, invalid variables." % (ln_n + 1))
+						# return -1
 				else:
 					is_alu = 0
 					function_names_index = function_names[MainType].index( func_var )
@@ -781,6 +794,14 @@ def Assemble( filename: str, dest_name: str ):
 				for i, e in enumerate(bin_vars):
 					for j, _ in enumerate( e ):
 						full_binary_function[bvi[i] + j] = e[j]
+				
+				if func_var == function_names[2][0]:
+					print("ALU")
+					print(bin_vars)
+					if vars[6] == "float":
+						print("FLOAT")
+						full_binary_function[10] = 1
+						vars[8] = None
 		if func_var not in wtf_excp:
 			fh.write( bm.blts( full_binary_function ) + "\n" )
 			bin_ln += 1
