@@ -25,17 +25,17 @@ def user_dtb(input, l=bw):
 		input *= -1
 	
 	if input == 0:
-		exponent = 255
+		exponent = 128
 	else:
 		try:
-			exponent = 255-m.floor(m.log(input, 2))
+			exponent = 128-m.floor(m.log(input, 2))
 		except ValueError:
 			print("Deciman to binary: Error: Domain error.")
 			raise ValueError
 	
 	#Manage proper exponent and mantissa
 	
-	mantissa = int(int(2**21*input)/2**(255-exponent))
+	mantissa = int(int(2**21*input)/2**(128-exponent))
 	
 	#Append to q
 	q.append(sign)
@@ -62,12 +62,12 @@ def user_btd( input, l=bw ):
 	q = 0
 	try:
 		sign = input[0]
-		exponent = input[1:9]
-		mantissa = input[9:32]
+		exponent = btd(input[1:9])
+		mantissa = btd(input[9:32])
 	except IndexError:
 		return 0
 	
-	v = 2**(256-btd(exponent))*(btd(mantissa)/(2**22))
+	v = 2**(128-exponent)*(mantissa/(2**21))
 	
 	if sign == 1:
 		return v

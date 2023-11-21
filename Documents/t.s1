@@ -2,6 +2,19 @@ mark start
 io from 0 gpr 0
 io from 1 gpr 1
 io from 2 gpr 2
+rom gpr 3 111111 float
+compute gpr 0 compare gpr 3 gpr 3
+if ==
+{
+stack pop gpr 0
+stack push gpr 0
+}
+compute gpr 2 compare gpr 3 gpr 3
+if ==
+{
+stack pop gpr 2
+stack push gpr 2
+}
 stack push gpr 0
 stack push gpr 2
 rom gpr 3 0 float
@@ -42,6 +55,7 @@ eof_mark
 }
 mark loop_end
 stack pop gpr 0
+stack push gpr 0
 io to 0 gpr 0
 start
 mark eof_mark
