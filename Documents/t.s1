@@ -4,33 +4,37 @@ io from 1 gpr 1
 io from 2 gpr 2
 stack push gpr 0
 stack push gpr 2
-rom gpr 3 0
+rom gpr 3 0 float
 compute gpr 1 compare gpr 3 gpr 3
 if ==
 {
 add 
 }
-rom gpr 3 1
+rom gpr 3 1 float
 compute gpr 1 compare gpr 3 gpr 3
 if ==
 {
 sub
 }
-rom gpr 3 2
+rom gpr 3 2 float
 compute gpr 1 compare gpr 3 gpr 3
 if ==
 {
 mul 
 }
-rom gpr 3 3
+rom gpr 3 3 float
 compute gpr 1 compare gpr 3 gpr 3
 if ==
 {
-rom gpr 0 123456
-io to 0 gpr 0
 div 
 }
-rom gpr 3 4
+rom gpr 3 4 float
+compute gpr 1 compare gpr 3 gpr 3
+if ==
+{
+sqrt
+}
+rom gpr 3 5 float
 compute gpr 1 compare gpr 3 gpr 3
 if ==
 {
@@ -63,8 +67,61 @@ loop_end
 mark div
 stack pop gpr 0
 stack pop gpr 1
-rom gpr 2 1000
-compute gpr 1 mul gpr 2 gpr 1 float
 compute gpr 1 div gpr 0 gpr 2 float
 stack push gpr 2
+loop_end
+mark sqrt
+stack pop gpr 1
+stack pop gpr 0
+rom gpr 2 1 float
+rom gpr 3 0 float
+stack push gpr 0
+stack push gpr 1
+stack push gpr 2
+stack push gpr 3
+mark sqrt_loop_start
+stack pop gpr 3
+stack pop gpr 2
+stack pop gpr 1
+stack pop gpr 0
+stack push gpr 0
+stack push gpr 1
+stack push gpr 2
+stack push gpr 3
+compute gpr 1 compare gpr 3 gpr 3
+if ==
+{
+stack pop gpr 3
+stack pop gpr 2
+stack pop gpr 1
+stack pop gpr 0
+stack push gpr 2
+sqrt_end
+}
+stack pop gpr 3
+stack pop gpr 2
+stack pop gpr 1
+stack pop gpr 0
+stack push gpr 0
+stack push gpr 1
+stack push gpr 2
+stack push gpr 3
+compute gpr 2 mul gpr 2 gpr 4 float
+compute gpr 4 sub gpr 0 gpr 5 float
+rom gpr 6 2 float
+compute gpr 2 mul gpr 6 gpr 6 float
+compute gpr 5 div gpr 6 gpr 7 float
+compute gpr 2 sub gpr 7 gpr 8 float
+rom gpr 9 1 float
+compute gpr 3 add gpr 9 gpr 9 float
+stack pop gpr 3
+stack pop gpr 2
+stack pop gpr 1
+stack pop gpr 0
+stack push gpr 0
+stack push gpr 1
+stack push gpr 8
+stack push gpr 9
+sqrt_loop_start
+mark sqrt_end
 loop_end

@@ -25,7 +25,7 @@ import math
 import BasicMath as bm
 import logging as lgn			#Logging for custom exceptions
 
-LOGLEVEL = lgn.DEBUG
+LOGLEVEL = lgn.INFO
 
 lgn.basicConfig(format="%(levelname)s: %(message)s", level=lgn.DEBUG)
 lgn.getLogger().setLevel(LOGLEVEL)
@@ -62,7 +62,7 @@ function_params = [
 		[	["jump", ">", "==", ">=", "<", "!=", "<=", "weird", "co", ">c", "==c", ">=c", "<c", "!=c", "<=c"], ["pass"] ],
 	],
 	[	#Setup general function parameters, True=types of regs, False=to/from, None=nan (copy user input in general), "pass"=stop checking for parameters
-		[	[True], [None], ["pass"] ],											#rom
+		[	[True], [None], [None,"float"], ["pass"] ],											#rom
 		[	[False], [None], [True], [None], ["pass"] ],						#ram
 		[	[True], [None], ["swap", "clone"], [True], [None],["pass"] ],		#reg
 		[	["push","pop", "set", "get"],[True], [None], ["pass"] ],			#stack
@@ -86,7 +86,7 @@ function_var_amount = [
 		1
 	],
 	[
-		2,
+		3,
 		3,
 		5,
 		3,
@@ -626,7 +626,13 @@ def Assemble( filename: str, dest_name: str ):
 			full_binary_function[0:4] = [0,0,0,0]
 			full_binary_function[12:13] = bm.dtb(regs.index(vars[0]), 2)
 			full_binary_function[13:19] = bm.dtb(int(vars[1]), 5)
-			nextLines[0] = bm.user_dtb(float(vars[2]))
+			try:
+				if vars[3] == "float":
+					nextLines[0] = bm.user_dtb(float(vars[2]))
+				else:
+					nextLines[0] = bm.dtb(int(vars[2]))
+			except Exception:
+				nextLines[0] = bm.dtb(int(vars[2]))
 		elif func_var == function_names[1][1]:
 			full_binary_function[0:4] = [1,0,0,0]
 			if vars[0] == "to":
@@ -746,11 +752,10 @@ def Assemble( filename: str, dest_name: str ):
 						bin_vars[0] = bm.dtb( 1, bvl[0] )
 					# try:
 					for i, _ in enumerate(bin_vars):
-						print(vars[i])
 						if i == 7:
 							try:
 								if vars[7] == "float":
-									bin_vars[3] = [1,0]
+									bin_vars[7] = [1,0]
 									break
 								# bin_vars[i] = bm.dtb(getParIndex( [2,0,i], vars[i] ), bvl[i])
 							except Exception:
@@ -796,10 +801,7 @@ def Assemble( filename: str, dest_name: str ):
 						full_binary_function[bvi[i] + j] = e[j]
 				
 				if func_var == function_names[2][0]:
-					print("ALU")
-					print(bin_vars)
 					if vars[6] == "float":
-						print("FLOAT")
 						full_binary_function[10] = 1
 						vars[8] = None
 		if func_var not in wtf_excp:

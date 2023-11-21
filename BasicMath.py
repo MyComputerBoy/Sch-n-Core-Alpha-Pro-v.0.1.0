@@ -35,7 +35,7 @@ def user_dtb(input, l=bw):
 	
 	#Manage proper exponent and mantissa
 	
-	mantissa = int(int(2**21*input)/int(2**(255-exponent)))
+	mantissa = int(int(2**21*input)/2**(255-exponent))
 	
 	#Append to q
 	q.append(sign)

@@ -114,4 +114,6 @@ def div(al, bl):
 def udiv(al, bl):
 	a = bm.user_btd(al)
 	b = bm.user_btd(bl)
-	return bm.user_dtb(a / b)
+	q = a/b
+	# print("%s/%s = %s" % (a, b, q))
+	return bm.user_dtb(q)

@@ -28,7 +28,7 @@ import time
 import logging as lgn			#Logging for custom exceptions
 from enum import Enum
 
-LOGLEVEL = lgn.DEBUG
+LOGLEVEL = lgn.WARNING
 
 lgn.basicConfig(format="%(levelname)s: %(message)s", level=lgn.DEBUG)
 lgn.getLogger().setLevel(LOGLEVEL)
@@ -272,9 +272,11 @@ def alu():		#//Update for new ALU
 			try:
 				q = g.udiv(num_a, num_b)
 			except ZeroDivisionError:
-				lgn.critical("ALU: Error: Can't divide by zero.")
-				lgn.info("Zero division at line %s." % (bm.btd(ln)))
+				lgn.critical("ALU: Error: Can't divide by zero at line %s. (%s/%s)" % (bm.btd(ln), bm.user_btd(num_a), bm.user_btd(num_b)))
 				raise ZeroDivisionError
+			except Exception:
+				lgn.critical("ALU: Error: Unknown error.")
+				raise Exception
 		else:					#Error
 			lgn.critical("ALU: Invalid function call at line %s" % (bm.btd(ln)))
 			lgn.info("ALU: Function: %s" % (bm.blts(func)))
