@@ -61,27 +61,27 @@ start
 mark eof_mark
 eof
 mark add
-stack pop gpr 0
 stack pop gpr 1
-compute gpr 1 add gpr 0 gpr 2 float
+stack pop gpr 0
+compute gpr 0 add gpr 1 gpr 2 float
 stack push gpr 2
 loop_end
 mark sub
-stack pop gpr 0
 stack pop gpr 1
-compute gpr 1 sub gpr 0 gpr 2 float
+stack pop gpr 0
+compute gpr 0 sub gpr 1 gpr 2 float
 stack push gpr 2
 loop_end
 mark mul
-stack pop gpr 0
 stack pop gpr 1
-compute gpr 1 mul gpr 0 gpr 2 float
+stack pop gpr 0
+compute gpr 0 mul gpr 1 gpr 2 float
 stack push gpr 2
 loop_end
 mark div
-stack pop gpr 0
 stack pop gpr 1
-compute gpr 1 div gpr 0 gpr 2 float
+stack pop gpr 0
+compute gpr 0 div gpr 1 gpr 2 float
 stack push gpr 2
 loop_end
 mark sqrt
@@ -97,8 +97,6 @@ mark sqrt_loop_start
 stack pop gpr 3
 stack pop gpr 2
 stack pop gpr 1
-stack pop gpr 0
-stack push gpr 0
 stack push gpr 1
 stack push gpr 2
 stack push gpr 3
@@ -131,8 +129,6 @@ compute gpr 3 add gpr 9 gpr 9 float
 stack pop gpr 3
 stack pop gpr 2
 stack pop gpr 1
-stack pop gpr 0
-stack push gpr 0
 stack push gpr 1
 stack push gpr 8
 stack push gpr 9

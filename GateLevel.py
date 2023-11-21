@@ -1,8 +1,6 @@
 """GateLevel.py -> Gate level implementation of the project
 """
 
-#Basic logic gate functions
-
 import BaseCPUInfo
 import math as m
 import BasicMath as bm
@@ -114,6 +112,4 @@ def div(al, bl):
 def udiv(al, bl):
 	a = bm.user_btd(al)
 	b = bm.user_btd(bl)
-	q = a/b
-	# print("%s/%s = %s" % (a, b, q))
-	return bm.user_dtb(q)
+	return bm.user_dtb(a/b)
