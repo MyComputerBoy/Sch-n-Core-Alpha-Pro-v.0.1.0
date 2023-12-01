@@ -21,31 +21,29 @@ run(filename, gui=False, print_line_nr=False, force_show_exceptions=False,time_r
 #Import libraries
 import BaseCPUInfo				#Basic CPU information
 import math
-import BasicMath as bm				#Basic math library
-import GateLevel as g
+import BasicMath as bm			#Basic math library
+import GateLevel as g			#Gatelevel functions for binary operations
 import importlib as il
 import time
 import logging as lgn			#Logging for custom exceptions
-from enum import Enum
+from enum import Enum			#Enum for elimination of magic numbers
 
+#Initiating logging
 LOGLEVEL = lgn.WARNING
-
 lgn.basicConfig(format="%(levelname)s: %(message)s", level=lgn.DEBUG)
 lgn.getLogger().setLevel(LOGLEVEL)
 
-lgn.debug("Imported libraries.")
-
 #Basic CPU info variables
 bw = BaseCPUInfo.bit_width
-
 bf = BaseCPUInfo.base_folder
 pf = BaseCPUInfo.programs_folder
 exeff = BaseCPUInfo.executable_files_folder
 
+#File extention name for the format
 file_extension_name = ".schonexe1"
 
+#Initiating runtime variables
 rom_data = []
-
 bz = bm.dtb(0) #Binary zero
 
 def initialize_rom(Filename: str):
@@ -74,6 +72,7 @@ ramv = [
 	bz for i in range(1024)	#Random Access Memory, emulated 1024, but is capable of 4.294.967.296
 ]
 
+#Classes for enums for elimination of magic numbers
 class ReadWrite(Enum):
 	READ = 0
 	WRITE = 1
@@ -128,10 +127,6 @@ regs = [
 	[bz for i in range(32)],	#Stack Pointers
 	[bz for i in range(10)],	#Special Purpose Internal CU Register
 ]
-
-reg_offs = [bm.dtb(0) for i in range(2)]
-
-buffer = bm.dtb(0)
 
 #Functions to manage buffer, registers and other memory storage units
 def buf(rw, list=bz):
@@ -210,16 +205,7 @@ def reg(rw, index, reg_type, value=None, preset=None):
 #Further basic CPU info variables
 ena_list = reg(0, ProtReg.ENABLELIST, RegType.PROTECTED, bz)
 set_list = reg(0, ProtReg.SETLIST, RegType.PROTECTED, bz)
-
-#----------------------------------------------------------
-#Update ALU test for improved testing
-#Test ALU
-# try:
-	
-	# lgn.debug("ALU tested.")
-# except Exception:
-	# lgn.critical(EmulatorRuntimeError.ALUNOTINITIATED.value)
-	# return -1
+buffer = bm.dtb(0)
 
 #Setup ALU
 ################################################
@@ -324,7 +310,23 @@ def alu():		#//Update for new ALU
 	if set_list[ALUConfig.SETFLAGS.value]:
 		reg(ReadWrite.WRITE, ProtReg.FLAGS, RegType.PROTECTED, comp)
 	return 1
-	# return 1
+
+#----------------------------------------------------------
+#Update ALU test for improved testing
+#Test ALU
+try:
+	buf(1, bm.user_dtb(5))
+	reg(ReadWrite.WRITE, ALUConfig.BREGISTER, RegType.ALU, bm.user_dtb(3))
+	reg(ReadWrite.WRITE, ALUConfig.ALUFUNCTION, RegType.ALU, bm.dtb(0, 4))
+	reg(ReadWrite.WRITE, ALUConfig.SPECIALFUNCTION, RegType.PROTECTED, bm.dtb(1, 1))
+	alu_r = alu()
+	if alu_r == 1:
+		lgn.debug("ALU tested.")
+	else:
+		lgn.critical("ALU: Unknown Error.")
+except Exception:
+	lgn.critical(EmulatorRuntimeError.ALUNOTINITIATED.value)
+	raise RuntimeError
 
 def pci():
 	ena_list = reg(ReadWrite.READ, ProtReg.ENABLELIST, RegType.PROTECTED)
@@ -342,7 +344,6 @@ def pci():
 
 #Setup Processor
 FunctionDefinitionMetaInfo = [
-
 	"FETCH",	#Special non-user accessible
 	"ALU",
 	"ROM",		#Starting for indexing
@@ -352,7 +353,6 @@ FunctionDefinitionMetaInfo = [
 	"CONDITIONALBRANCH",
 	"CALLRETURNFUNCTION",
 	"GPIO",
-
 ]
 
 #Clear Registers
@@ -367,11 +367,6 @@ def cls(r=0, g=0, b=0):
 		for i, _ in enumerate(regs):
 			for j, _ in enumerate(regs[i]):
 				regs[i][j] = bz
-		clear_reg_offs()
-
-def clear_reg_offs():
-	global reg_offs
-	reg_offs = [[0 for i in range(32)] for i in range(2)]
 
 def pr(lst, gui=False):#Print function
 	if gui == True:
@@ -671,7 +666,6 @@ def execute(set_list, ena_list, gui=False,
 		 else: converts to int then prints("Output: " + int)
 	reg_a/reg_b/reg_c: registers indentified by [index, type]
 	"""
-	global reg_offs
 	global buf
 	set(set_list)
 	enable(ena_list)
@@ -815,9 +809,6 @@ def single_instruction(reset=0, gui=False,
 	
 	#fetch next instruction 
 	for i, _ in enumerate(FunctionDefinitions[0][0]):
-		lgn.debug("FETCH: %s" % (i))
-		execute(FunctionDefinitions[0][0][i], FunctionDefinitions[1][0][i])
-	# clear_reg_offs()
 	inp = reg(ReadWrite.READ, ProtReg.CONTROLUNITINPUT, RegType.PROTECTED)
 	
 	#if input is all 1s, exit with return code 1
@@ -876,7 +867,6 @@ def single_instruction(reset=0, gui=False,
 		execute(FunctionDefinitions[0][_ofs][i], 
 				FunctionDefinitions[1][_ofs][i], 
 				gui, instruction_vars)
-	clear_reg_offs()
 	return 0
 
 def run(filename, gui=False, print_line_nr=False, 

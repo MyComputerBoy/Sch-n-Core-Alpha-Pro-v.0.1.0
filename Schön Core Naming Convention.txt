@@ -1,0 +1,9 @@
+Schön:
+	Alpha: Single Core
+	Beta: Duo Core
+	Gamma: Quad Core
+
+	Lite: 8 bit
+	Standard: 16 bit
+	Pro: 32 bit
+	Enterprise: 64 bit

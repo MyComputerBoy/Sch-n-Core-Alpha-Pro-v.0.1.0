@@ -17,14 +17,16 @@ Assemble(filename: str, dest_name: str) -> Function to call for assembly of file
 
 #Schön Assembler for Schön Core Alpha v.0.1.0
 
+
 import BaseCPUInfo
+
 import importlib as il 
 import math 
 import BasicMath as bm
 import logging as lgn			#Logging for custom exceptions
 
-#Initiating logging
 LOGLEVEL = lgn.INFO
+
 lgn.basicConfig(format="%(levelname)s: %(message)s", level=lgn.DEBUG)
 lgn.getLogger().setLevel(LOGLEVEL)
 
@@ -38,19 +40,22 @@ class CustomException(Exception):
 	pass
 
 function_names = [
-	[	"if" ],
-	[	"rom", "ram", "reg", "stack", "interrupt", "io", "call"],
-	[	"compute" ],
-	[	"mark",	"else",	"elif",	"pass", ],
+	[	"hvis" ],
+	[	"lkh", "ram", "reg", "stack", "interrupt", "iu", "call"],
+	[	"beregn" ],
+	[	"marker",	"else",	"elif",	"pass", ],
 ]
-
-sei = [ "{", "}", ]					#Start end indicator
-tfn = [ "to", "from", ]				#To from names
+#Start end indicator
+sei = [ "{", "}", ]
+#To from names
+tfn = [ "to", "from", ]
+#Register names in order
 #General purpose, alu, stack pointers, interrupt, special purpose
-regs = ["gpr","alur","stk","spr"]	#Register names in order
-jump_name = "jump"					#Jump name
-define = "def"						#Keyword to define a function
-eof = "eof"							#EOF indicator name
+regs = ["gpr","alur","stk","spr"]
+#Jump name
+jump_name = "jump"
+#Keyword to define a function
+define = "def"
 
 function_params = [
 	[	#Setup special parameters, at the moment only if is implemeted, thus only the if operators
@@ -92,6 +97,8 @@ function_var_amount = [
 		[ 9 ],
 	],
 ]
+#EOF indicator name
+eof = "eof"
 
 var_excp = [
 	[	#Functions that need no variables

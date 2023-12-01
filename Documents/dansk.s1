@@ -1,0 +1,137 @@
+marker start
+iu from 0 gpr 0
+iu from 1 gpr 1
+iu from 2 gpr 2
+lkh gpr 3 111111 float
+beregn gpr 0 compare gpr 3 gpr 3
+hvis ==
+{
+stack pop gpr 0
+stack push gpr 0
+}
+beregn gpr 2 compare gpr 3 gpr 3
+hvis ==
+{
+stack pop gpr 2
+stack push gpr 2
+}
+stack push gpr 0
+stack push gpr 2
+lkh gpr 3 0 float
+beregn gpr 1 compare gpr 3 gpr 3
+hvis ==
+{
+plus
+}
+lkh gpr 3 1 float
+beregn gpr 1 compare gpr 3 gpr 3
+hvis ==
+{
+minus
+}
+lkh gpr 3 2 float
+beregn gpr 1 compare gpr 3 gpr 3
+hvis ==
+{
+gange
+}
+lkh gpr 3 3 float
+beregn gpr 1 compare gpr 3 gpr 3
+hvis ==
+{
+divider
+}
+lkh gpr 3 4 float
+beregn gpr 1 compare gpr 3 gpr 3
+hvis ==
+{
+kvadratrod
+}
+lkh gpr 3 5 float
+beregn gpr 1 compare gpr 3 gpr 3
+hvis ==
+{
+eof_marker
+}
+marker loop_end
+stack pop gpr 0
+stack push gpr 0
+iu to 0 gpr 0
+start
+marker eof_marker
+eof
+marker plus
+stack pop gpr 1
+stack pop gpr 0
+beregn gpr 0 add gpr 1 gpr 2 float
+stack push gpr 2
+loop_end
+marker minus
+stack pop gpr 1
+stack pop gpr 0
+beregn gpr 0 sub gpr 1 gpr 2 float
+stack push gpr 2
+loop_end
+marker gange
+stack pop gpr 1
+stack pop gpr 0
+beregn gpr 0 mul gpr 1 gpr 2 float
+stack push gpr 2
+loop_end
+marker divider
+stack pop gpr 1
+stack pop gpr 0
+beregn gpr 0 div gpr 1 gpr 2 float
+stack push gpr 2
+loop_end
+marker kvadratrod
+stack pop gpr 1
+stack pop gpr 0
+lkh gpr 2 1 float
+lkh gpr 3 0 float
+stack push gpr 0
+stack push gpr 1
+stack push gpr 2
+stack push gpr 3
+marker sqrt_loop_start
+stack pop gpr 3
+stack pop gpr 2
+stack pop gpr 1
+stack push gpr 1
+stack push gpr 2
+stack push gpr 3
+beregn gpr 1 compare gpr 3 gpr 3
+hvis ==
+{
+stack pop gpr 3
+stack pop gpr 2
+stack pop gpr 1
+stack pop gpr 0
+stack push gpr 2
+sqrt_end
+}
+stack pop gpr 3
+stack pop gpr 2
+stack pop gpr 1
+stack pop gpr 0
+stack push gpr 0
+stack push gpr 1
+stack push gpr 2
+stack push gpr 3
+beregn gpr 2 mul gpr 2 gpr 4 float
+beregn gpr 4 sub gpr 0 gpr 5 float
+lkh gpr 6 2 float
+beregn gpr 2 mul gpr 6 gpr 6 float
+beregn gpr 5 div gpr 6 gpr 7 float
+beregn gpr 2 sub gpr 7 gpr 8 float
+lkh gpr 9 1 float
+beregn gpr 3 add gpr 9 gpr 9 float
+stack pop gpr 3
+stack pop gpr 2
+stack pop gpr 1
+stack push gpr 1
+stack push gpr 8
+stack push gpr 9
+sqrt_loop_start
+marker sqrt_end
+loop_end
