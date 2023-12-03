@@ -49,9 +49,10 @@ bz = bm.dtb(0) #Binary zero
 def initialize_rom(Filename: str):
 	"""initialize_rom() -> initializes Read Only Memory by reading file given at "rom/fn.txt" and writes the data to rom_data
 	"""
-	rom_fh = open(bf + exeff + Filename + file_extension_name, "r")
+	
 	global rom_data 
 	rom_data = []
+	rom_fh = open(bf + exeff + Filename + file_extension_name, "r")
 	rom_data_temp = rom_fh.readlines()
 	rom_fh.close()
 	
@@ -66,6 +67,14 @@ def initialize_rom(Filename: str):
 				temp.append(0)
 		rom_data.append(temp)
 	return 1
+
+#Internal registers emulated as list of lists
+regs = [
+	[bz for i in range(32)],	#General Purpose Registers
+	[bz for i in range(32)],	#Arithmetic/Logic Unit Registers
+	[bz for i in range(32)],	#Stack Pointers
+	[bz for i in range(10)],	#Special Purpose Internal CU Register
+]
 
 #RAM emulated through huge list
 ramv = [
@@ -119,14 +128,6 @@ class EmulatorRuntimeError(Enum):
 	ALUFAILED = "ALU: Unknown error."
 	ALUNOTINITIATED = "ALU: Couldn't initiate."
 	ILLEGALFUNCTION = "Offset: Illegal function called."
-
-#Internal registers emulated as list of lists
-regs = [
-	[bz for i in range(32)],	#General Purpose Registers
-	[bz for i in range(32)],	#Arithmetic/Logic Unit Registers
-	[bz for i in range(32)],	#Stack Pointers
-	[bz for i in range(10)],	#Special Purpose Internal CU Register
-]
 
 #Functions to manage buffer, registers and other memory storage units
 def buf(rw, list=bz):
@@ -217,36 +218,38 @@ def alu():		#//Update for new ALU
 	"""
 	
 	global reg
-	spec_func_var = reg(ReadWrite.READ, ALUConfig.SPECIALFUNCTION, RegType.PROTECTED)
+	
+	#Get inputs
 	ena_list = reg(ReadWrite.READ, ProtReg.ENABLELIST, RegType.PROTECTED)
 	set_list = reg(ReadWrite.READ, ProtReg.SETLIST, RegType.PROTECTED)
 	spec_func = reg(ReadWrite.READ, ALUConfig.SPECIALFUNCTION, RegType.PROTECTED)
 	ln = reg(ReadWrite.READ, ProtReg.PROGRAMCOUNTER, RegType.PROTECTED)
-	num_a = buf(0)
-	lgn.debug("ALU: ALU A Register: %s" % (bm.user_btd(num_a)))
+	func = reg(ReadWrite.READ, ALUConfig.ALUFUNCTION, RegType.ALU)
+	func = bm.blts(func[0:4])
 	
+	#Get input B or 1 for increment or decrement
 	if ena_list[ALUConfig.PROGRAMCOUNTERINCREMENT.value] or ena_list[ALUConfig.INCREMENT.value] or ena_list[ALUConfig.DECREMENT.value]:
 		num_b = bm.dtb(1)
 	else:
 		num_b = reg(ReadWrite.READ, ALUConfig.BREGISTER, RegType.ALU)
 	
-	func = reg(ReadWrite.READ, ALUConfig.ALUFUNCTION, RegType.ALU)
-	tmp = [0 for i in range(4)]
-	for i in range(4):
-		if func[i] == 1:
-			tmp[i] = 1
-	func = bm.blts(tmp)
+	num_a = buf(0)
 	tmp_a = bm.btd(num_a)
 	tmp_b = bm.btd(num_b)
-	co = 0
+	lgn.debug("ALU: ALU A Register: %s" % (bm.user_btd(num_a)))
+	
+	#Calculate comparison
 	if tmp_a > tmp_b:
 		comp = [1,0,0]
 	elif tmp_a == tmp_b:
 		comp = [0,1,0]
 	else:
 		comp = [0,0,1]
+	
+	#Compute computation
 	q = []
-	if spec_func[0] == 1:
+	co = 0
+	if spec_func[0] == 1:	#If it is a float operation
 		lgn.debug("ALU: FLOAT.")
 		if func == "0000":
 			q, co = g.ula(num_a, num_b)
@@ -290,7 +293,7 @@ def alu():		#//Update for new ALU
 		elif func == "1110":	#Logical not
 			q = g.nl(num_a)
 		elif func == "0001":	#Logical shift
-			if bm.btd(spec_func_var) == 1:
+			if bm.btd(spec_func) == 1:
 				q, co = shift(num_b, bm.btd(num_a), 0)
 			else:
 				q, co = shift(num_b, bm.btd(num_a))
@@ -303,18 +306,22 @@ def alu():		#//Update for new ALU
 			lgn.critical("ALU: Invalid function call at line %s" % (bm.btd(ln)))
 			raise Exception
 	
+	#Manage output
 	comp.append(co)
 	lgn.info("ALU: %s" % (comp))
 	reg(ReadWrite.WRITE, ProtReg.AOR, RegType.PROTECTED, q)
 	lgn.debug("AOR: %s" % (bm.user_btd(q)))
 	if set_list[ALUConfig.SETFLAGS.value]:
 		reg(ReadWrite.WRITE, ProtReg.FLAGS, RegType.PROTECTED, comp)
+	
+	#Return 1 for indication of no errors encountered
 	return 1
 
 #----------------------------------------------------------
 #Update ALU test for improved testing
 #Test ALU
 try:
+	lgn.debug("ALU: Testing integrity of ALU.")
 	buf(1, bm.user_dtb(5))
 	reg(ReadWrite.WRITE, ALUConfig.BREGISTER, RegType.ALU, bm.user_dtb(3))
 	reg(ReadWrite.WRITE, ALUConfig.ALUFUNCTION, RegType.ALU, bm.dtb(0, 4))
@@ -614,6 +621,7 @@ def sr(lst, comp, var_a=[0]):	#Should Run?
 #Update for new function definitions!
 def ofs(func, instruction_vars):	#Offset
 	
+	lgn.debug("OFS: Instruction Variables: %s" % (instruction_vars))
 	if instruction_vars[RuntimeVariables.LOGICALALU.value][0] == 1:
 		return 1, 1
 	
@@ -637,20 +645,11 @@ def ofs(func, instruction_vars):	#Offset
 	dtl = bm.btd(tl)
 	return ofs_array[func] + dtl, func+2
 
-def sa(bool):				#Set Address
-	if not bool:
-		return 
-		
-	iint = 0
-	for i, _ in enumerate(set_address):
-		execute(set_address[0][i], set_address[1][i], bm.btd(reg_a))
-
 def dump_rom():
 	global rom_data
-	print("\nDUMP ROM:")
+	lgn.debug("ROM: Dumping ROM:")
 	for i, line in enumerate(rom_data):
-		print("%s: %s" % (i, bm.blts(line)))
-	print("\n")
+		lgn.debug("%s: %s" % (i, bm.blts(line)))
 
 #Define actions dictated by set/enable pins
 def execute(set_list, ena_list, gui=False, 
@@ -671,6 +670,7 @@ def execute(set_list, ena_list, gui=False,
 	enable(ena_list)
 	var = bz
 	
+	#Attempt to get registers
 	try:
 		reg_a = variables[RuntimeVariables.REGISTERA.value]
 		reg_b = variables[RuntimeVariables.REGISTERB.value]
@@ -683,8 +683,6 @@ def execute(set_list, ena_list, gui=False,
 		pass
 	
 	#Enable actions:
-	# if ena_list[0]:		#pci
-		# pci()
 	if ena_list[1]:		#pc
 		var = reg(ReadWrite.READ, ProtReg.PROGRAMCOUNTER, RegType.PROTECTED)
 	if ena_list[2]:		#aor 
@@ -701,6 +699,7 @@ def execute(set_list, ena_list, gui=False,
 		tmp = reg(ReadWrite.READ, ProtReg.ROMADDRESS, RegType.PROTECTED)
 		try:
 			var = rom(0, bm.btd(tmp))
+			lgn.debug("Execute: ROM: %s" % (bm.blts(var)))
 		except IndexError:
 			temp = reg(ReadWrite.READ, ProtReg.ROMADDRESS, RegType.PROTECTED)
 			lgn.critical("ROM: Error: Invalid program counter: %s" % (bm.btd(temp)))
@@ -721,7 +720,6 @@ def execute(set_list, ena_list, gui=False,
 		var = reg(ReadWrite.READ, ProtReg.STACKPOINTER, RegType.PROTECTED)
 	
 	buf(1,var)
-	# lgn.debug("BUFFER:%s" % (bm.blts(var)))
 	
 	#Set actions:
 	if set_list[1]:	#pc
@@ -809,6 +807,8 @@ def single_instruction(reset=0, gui=False,
 	
 	#fetch next instruction 
 	for i, _ in enumerate(FunctionDefinitions[0][0]):
+		lgn.debug("FETCH: %s" % (i))
+		execute(FunctionDefinitions[0][0][i], FunctionDefinitions[1][0][i])
 	inp = reg(ReadWrite.READ, ProtReg.CONTROLUNITINPUT, RegType.PROTECTED)
 	
 	#if input is all 1s, exit with return code 1
@@ -830,8 +830,6 @@ def single_instruction(reset=0, gui=False,
 	#get input variables
 	#Where the different variables start in input space
 	var_ofs = [0,4,5,9,11,18,25]
-	
-	#Length of variables 
 	var_lengs = [4,1,4,2,7,7,7]
 	
 	#Unpack instruction to variables
@@ -845,32 +843,34 @@ def single_instruction(reset=0, gui=False,
 				t.append(0)
 		instruction_vars.append(t)
 	
-	if force_show_exceptions:
-		for i, var in enumerate(instruction_vars):
-			lgn.info("%s: %s" % (RuntimeVariables(i).name, bm.blts(var)))
-	
+	#Get offset from function list and meta information for debugging
 	_ofs, meta_func = ofs(bm.btd(instruction_vars[RuntimeVariables.FUNCTIONVARIABLE.value]), instruction_vars)
 	if _ofs == EmulatorRuntimeError.ILLEGALFUNCTION:
 		return -1
 	
+	#Make registers ready for execution
 	lgn.debug("SingleInstruction: MetaFunction: %s, ofs: %s" % (FunctionDefinitionMetaInfo[meta_func], _ofs))
-	# lgn.debug("SingleInstruction: Runtime variables: \n%s" % (instruction_vars))
-	if instruction_vars[RuntimeVariables.LOGICALALU.value][0] == 1:
+	if instruction_vars[RuntimeVariables.LOGICALALU.value][0] == 1:	#If it is an alu operation
 		lgn.info("SingleInstruction: ALU Function: %s" % (instruction_vars[RuntimeVariables.FUNCTIONVARIABLE.value]))
 		reg(ReadWrite.WRITE, ALUConfig.ALUFUNCTION, RegType.ALU, instruction_vars[RuntimeVariables.FUNCTIONVARIABLE.value])
 		reg(ReadWrite.WRITE, ALUConfig.SPECIALFUNCTION, RegType.PROTECTED, instruction_vars[RuntimeVariables.VARIABLEB.value])
-	else:
+	else:															#If it is a function operation
 		reg(ReadWrite.WRITE, ALUConfig.ALUFUNCTION, RegType.ALU, bm.dtb(0, 4))
 		reg(ReadWrite.WRITE, ALUConfig.SPECIALFUNCTION, RegType.PROTECTED, bm.dtb(2))
+	
+	#Execute operation
 	for i, _ in enumerate(FunctionDefinitions[0][_ofs]):
 		lgn.debug("RUN: %s" % (i))
 		execute(FunctionDefinitions[0][_ofs][i], 
 				FunctionDefinitions[1][_ofs][i], 
 				gui, instruction_vars)
+	
+	#Return 0 for indication of no errors encountered
 	return 0
 
 def run(filename, gui=False, print_line_nr=False, 
-		force_show_exceptions=False,time_runtime=False):
+		force_show_exceptions=False,time_runtime=False,
+		DumpROM=True):
 	"""run(filename, gui=False, print_line_nr=False, force_show_exceptions=False,time_runtime=False) -> Runs executable program from filename
 	Parameters:
 	
@@ -887,19 +887,10 @@ def run(filename, gui=False, print_line_nr=False,
 	Returns: error code: -1 for error, 0 for instruction completed but continue and 1 for completed and exit
 	"""
 	
+	#Handle logger
 	lgn.getLogger().setLevel(LOGLEVEL)
 	
-	#Open and read file for execution 
-	file_path = bf + exeff + filename + file_extension_name
-	try:
-		with open(file_path, "r") as temp_fh:	
-			lines = temp_fh.readlines()
-			temp_fh.close()
-	except FileNotFoundError:
-		lgn.critical("%s.run(): Couldn't open file %s." % (__file__, file_path))
-		return -1
-	
-	#Setup cpu sattelite files for executions 
+	#Reset CPU and initialise for execution
 	reg(ReadWrite.WRITE, ProtReg.CONTROLUNITINPUT, RegType.PROTECTED, bz)
 	single_instruction(reset=1)
 	t = initialize_rom(filename)
@@ -908,20 +899,23 @@ def run(filename, gui=False, print_line_nr=False,
 	if time_runtime:
 		start_time = time.time()
 	
+	if DumpROM:
+		dump_rom()
+	
 	#Execute program 
 	while True:
 		q = single_instruction(0, gui, print_line_nr, force_show_exceptions)
 		if isinstance(q, int):
-			if q == 1:
+			if q == 1:		#EXIT_SIGNAL
 				if time_runtime:
 					end_time = time.time()
 					lgb.debug("elapsed time: %s" % (end_time-start_time))
 					return [1, end_time-start_time]
 				lgn.debug("Run: Program returned with exit code 1.")
 				return 1
-			elif q == -1:
+			elif q == -1:	#Error signal
 				lgn.critical("Error: %s.run(): return code -1, runtime stopped" % (__file__))
 				raise Exception
-			elif q != 0:
+			elif q != 0:	#Unknown error
 				lgn.warning(q)
 				print(q)

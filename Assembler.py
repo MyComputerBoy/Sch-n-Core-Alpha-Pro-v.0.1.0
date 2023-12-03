@@ -3,11 +3,11 @@
 My own proprietary low level language for my CPU Schön Core Alpha v.0.1.0
 Major non-user functions:
 
-inline(bool, line, filename, used_in_escape) -> Handles if statements
+HandleSEI(bool, line, filename, used_in_escape) -> Handles if statements
 getBinLine(lines, line, marks) -> Handles line indexing for assembled file
-gin(if_marks, ts) -> Handles if statement orders, able to handle nested if statements and if elif else statements
-find_marks(lines) -> Handles marks for absolute line ignorant jumping
-get_var_order(MainType: int, FuncNum: int, BVL: list, BVI: list, ReorderDict: dict) -> Handles variable ordering for easier conversion between assembly and machine instruction
+GetSEIClosingStatement(if_marks, ts) -> Handles if statement orders, able to handle nested if statements and if elif else statements
+FindMarks(lines) -> Handles marks for absolute line ignorant jumping
+GetVariableOrder(MainType: int, FuncNum: int, BVL: list, BVI: list, ReorderDict: dict) -> Handles variable ordering for easier conversion between assembly and machine instruction
 
 Major user functions:
 
@@ -17,6 +17,7 @@ Assemble(filename: str, dest_name: str) -> Function to call for assembly of file
 
 #Schön Assembler for Schön Core Alpha v.0.1.0
 
+#Import libraries
 import BaseCPUInfo
 import importlib as il 
 import math 
@@ -106,7 +107,7 @@ var_excp = [
 	],
 ]
 #Get function parameter index
-def getParIndex( indx=[0,0,0], var="" ):
+def GetParameterIndex( indx=[0,0,0], var="" ):
 	temp_par = function_params[indx[0]][indx[1]][indx[2]][0]
 	if temp_par == True:
 		return regs.index( var )
@@ -129,35 +130,22 @@ wtf_excp = [
 	define,
 	"",
 ]
-#Function to manage if statements
-def inline( bool, line, filename, used_in_escape ):
-	fh = open( bf + pf + filename, "r" )
-	lines = fh.readlines()
-	fh.close()
-	if bool:
-		if used_in_escape == 1 and sei[1] in lines[line]:
-			return False
-		else:
-			return True
-	else:
-		if sei[0] in lines[line]:
-			return False
-		else:
-			return True
 
-def getFuncNum( func_var, bool=False ):
-	if bool == False:
-		m = 1
-	else:
-		m = 0
-	if func_var in function_names[1]:
+#Function to manage if statements
+def HandleSEI( line, lines, used_in_escape ):
+	if used_in_escape == 1 and sei[1] in lines[line]:
+		return False
+	return True
+
+def GetFunctionIndex(func_var):
+	if func_var in function_names[1]:	#Check in function_names[1]
 		return function_names[1].index( func_var )
-	elif func_var in function_names[2]:
-		return function_names[2].index( func_var ) + 15 * m
-	else:
+	elif func_var in function_names[2]:	#Check in function_names[2]
+		return function_names[2].index( func_var )
+	else:								#Unknown function variable
 		raise NameError
 
-def getBinLine( lines, line, marks ):
+def getBinLine( lines, line_end, marks ):
 	"""getBinLine(lines: list, line: int, marks: dict) -> Handles line indexing for assembled file
 	Parameters:
 	
@@ -167,7 +155,9 @@ def getBinLine( lines, line, marks ):
 	
 	Returns: int of the binary line number post assembled
 	"""
-	blns = {	#Length of binary lines
+	
+	#Length of binary lines for unusual lengths
+	BinaryLenghts = {
 		function_names[1][0]: 2,	#rom
 		function_names[1][1]: 2,	#ram
 		function_names[1][5]: 2,	#io
@@ -176,60 +166,64 @@ def getBinLine( lines, line, marks ):
 		function_names[3][2]: 3,	#elif
 		sei[1]: 0,
 	}
-	l = 0
-	bin_rel_ln = 0
-	for i in range( line ):
-		gblln = lines[l].split()
-		gblf = gblln.pop( 0 )
-		if gblf in blns:
-			bin_rel_ln += blns[gblf]
-		elif gblf in marks:
-			bin_rel_ln += 2
+	
+	BinaryLineNumber = 0
+	
+	for i in range( line_end ):
+		Line = lines[i].split()
+		Function = Line.pop( 0 )
+		if Function in BinaryLenghts:
+			BinaryLineNumber += BinaryLenghts[Function]
+		elif Function in marks:
+			BinaryLineNumber += 2
 		else:
-			bin_rel_ln += 1
-		l += 1
-	return bin_rel_ln
+			BinaryLineNumber += 1
+	
+	return BinaryLineNumber
 	
 #Function to manage if statement order
-def gin( marks, ts, f=False ):
-	if f==False:
-		if len( marks[ts] ) == 0:
-			return str( ts )
-		else:
-			ts = int( ts )
-			for j, _ in enumerate( marks ):
-				t = marks[str(ts-j)]
-				if len( t ) == 0:
-					return str( ts-j )
-				else:
-					iint = 1
-					for i, _ in enumerate( t ):
-						if t[str(i)]["0"] == 0:
-							break
-						elif iint == len( t ):
-							return str( ts-j )
-						iint += 1
-	else:
-		if len( marks[ts] ) == 0:
-			return str( ts )
-		else:
-			ts = int( ts )
-			for j, _ in enumerate( marks ):
-				t = marks[str(ts-j)]
-				if len( t ) == 0:
-					return str( ts-j )
-				else:
-					iint = 1
-					for i, _ in enumerate( t ):
-						if t[str(i)]["0"] == 0:
-							break
-						elif iint == len( t ):
-							return str( ts-j )
-						iint += 1
+def GetSEIClosingStatement( marks, MarkIndex, IsIf=False ):
+	if IsIf==False:
+		#If there is zero marks left
+		if len( marks[MarkIndex] ) == 0:
+			return str( MarkIndex )
+		
+		MarkIndex = int( MarkIndex )
+		for j, _ in enumerate( marks ):
+			t = marks[str(MarkIndex-j)]
+			if len( t ) == 0:
+				return str( MarkIndex-j )
+			
+			iint = 1
+			for i, _ in enumerate( t ):
+				if t[str(i)]["0"] == 0:
+					break
+				elif iint == len( t ):
+					return str( MarkIndex-j )
+				iint += 1
+		return "0"
+	
+	if len( marks[MarkIndex] ) == 0:
+		return str( MarkIndex )
+	
+	MarkIndex = int( MarkIndex )
+	for j, _ in enumerate( marks ):
+		t = marks[str(MarkIndex-j)]
+		if len( t ) == 0:
+			return str( MarkIndex-j )
+		
+		iint = 1
+		for i, _ in enumerate( t ):
+			if t[str(i)]["0"] == 0:
+				break
+			elif iint == len( t ):
+				return str( MarkIndex-j )
+			iint += 1
+	
 	return str( 0 )
 
-def find_marks(lines: list):
-	"""find_marks(lines: list) -> Handles marks for absolute line ignorant jumping
+def FindMarks(lines: list):
+	"""FindMarks(lines: list) -> Handles marks for absolute line ignorant jumping
 	Parameters:
 	
 	lines: list of lines to handle
@@ -253,6 +247,8 @@ def find_marks(lines: list):
 	
 	Returns: dict if marks found, dict of if_marks found
 	"""
+	
+	#Initialize working variables
 	marks = dict()
 	funcs = dict()
 	funcs_names = dict()
@@ -260,24 +256,31 @@ def find_marks(lines: list):
 	if_marks = dict()
 	vars = ["","","",""]
 	iml = []
+	
+	#Search through lines
 	for ln, line in enumerate(lines):
 		func = line.split()
-		# lgn.debug("FindMarks: func: %s" % (func))
+		
+		try:
+			func_var = func.pop( 0 )
+		except AttributeError:
+			raise CustomException("Error: ln %s, Schön Assembly does not allow white-space lines." % (ln+1))
+		
+		#func_snd and func_snd_var is next line's function and variables
 		try:
 			func_snd = lines[ln+1].split()
 			func_snd_var = func_snd.pop( 0 )
-		except:
+		except IndexError:
 			func_snd = None
 			func_snd_var = None
-		try:
-			func_var = func.pop( 0 )
-		except Exception:
-			raise CustomException("Error: ln %s, Schön Assembly does not allow white-space lines." % (ln+1))
+		
 		for i in range( 3 ):
 			try:
 				vars[i] = func.pop( 0 )
-			except:
+			except IndexError:
 				vars[i] = None
+		
+		#Handle various functions
 		if func_var == function_names[3][0]:
 			marks[vars[0]] = ln
 		elif func_var == define:
@@ -289,13 +292,13 @@ def find_marks(lines: list):
 			if_marks[ str( len( if_marks ) ) ] = dict()
 		elif func_var == function_names[3][1]:
 			ts = str( len( if_marks ) - 1 )
-			ts = gin( if_marks, ts )
+			ts = GetSEIClosingStatement( if_marks, ts )
 			tss = str( len( if_marks[ ts ] ) )
 			lines[ln] = function_names[3][1] + " # " + str( ts ) + " " + str( tss )
 			if_marks[ ts ][tss] = {'0': 1, '1': ln}
 		elif func_var == function_names[3][2]:
 			ts = str( len( if_marks ) - 1 )
-			ts = gin( if_marks, ts )
+			ts = GetSEIClosingStatement( if_marks, ts )
 			tss = str( len( if_marks[ ts ] ) )
 			if vars[1] != None:
 				lines[ln] = function_names[3][2] + " " + str( vars[0] ) + " " + str( vars[1] ) + " " + str( vars[2] ) + " # " + str( ts ) + " " + str( tss )
@@ -305,81 +308,42 @@ def find_marks(lines: list):
 		elif func_var == sei[1] and func_snd_var != function_names[3][1] and func_snd_var != function_names[3][2]:
 			ts = str( len( if_marks ) - 1 )
 			try:
-				ts = gin( if_marks, ts )
+				ts = GetSEIClosingStatement( if_marks, ts )
 				tss = str( len( if_marks[ ts ] ) )
 			except KeyError:
 				lgn.debug("Probably func:")
 				lgn.debug("funcs: %s" % (funcs))
 				ts = str( len( funcs ) - 1)
-				ts = gin( funcs, ts, True )
+				ts = GetSEIClosingStatement( funcs, ts, True )
 				tss = str( len( funcs[ts] ) )
 				funcs[ ts ][tss] = {'0': 0, '1': ln}
+		
 		ln += 1
+	
 	return marks, if_marks, funcs, funcs_names
 
-#Test For Binary Or Hexadicmal
-def tfbh( var ):
-	if var == "0b" + var[2:]:
-		return False
-	elif var == "0x" + var[2:]:
-		return False
-	else:
-		return True
-
-#Get Variable Type
-def gvt( var ):
+def GetVariableType( var ):
 	if var == "0b" + var[2:]:
 		return "bin"
 	elif var == "0x" + var[2:]:
 		return "hex"
-	else:
-		try:
-			tuv = int( var )
-			return "int"
-		except:
-			return "other"
+	
+	try:
+		tuv = int( var )
+		return "int"
+	except ValueError:
+		return "other"
 
-def get_var_order(MainType: int, FuncNum: int, BVL: list, BVI: list, ReorderDict: dict):
+def GetVariableOrder(MainType: int, FuncNum: int, BVL: list, BVI: list, ReorderDict: dict):
 	QBVL = []	#Binary variable length
 	QBVI = []	#Binary variable index
 	
 	for i, _ in enumerate(BVL):	#Reorder variables and indecies according to the ReorderDict
-		# print("BVL: i: %s, e: %s" % (i, _))
+		lgn.debug("BVL: i: %s, e: %s" % (i, _))
 		QBVL.append(BVL[ReorderDict[MainType][FuncNum][i]])
 		QBVI.append(BVI[ReorderDict[MainType][FuncNum][i]])
 	
 	return QBVL, QBVI
-
-def create_full_binary_function(bin_vars: list, bvi: list, bvl: list, full_binary_function: list = None):
-	#If full_binary_function isn't predefined initialize it to an empty word
-	if full_binary_function == None:
-		full_binary_function = [0 for i in range(bw)]
-	
-	#Populate full_binary_function with binary vars based on binary variable index and lenghts
-	for i, _ in enumerate(bin_vars):
-		for j, _ in enumerate(bin_vars[i]):
-			full_binary_function[bvi[i] + j] = bin_vars[i][j]
-	
-	return full_binary_function
-
-def init_bin_vars(bvi: list, bvl: list):
-	#Initialize bin_vars
-	bin_vars = []
-	
-	#Populate bin_vars
-	for j, e in enumerate( zip(bvl,bvi) ):
-		bin_vars.append( [0 for k in range( bvl[j] )] )
-	
-	return bin_vars
-
-def _GetBinLine_(filename: str, ln: int):
-	fh = open(bf + pf + filename)
-	lines = fh.readlines()
-	fh.close()
-	
-	marks, if_marks = find_marks(lines)
-	
-	return getBinLine(lines, ln, marks)
 
 def Assemble( filename: str, dest_name: str ):
 	"""Assemble(filename: str, dest_name: str) -> Function to call for assembly of filename to dest_name, dest_name automatically apllies ".schonexe" postfix
@@ -404,7 +368,7 @@ def Assemble( filename: str, dest_name: str ):
 	bin_ln = 0		#Binary line number
 	il = 0			#If length
 	ignore_ln = []	#Lines to ignore
-	marks, if_marks, funcs, funcs_names = find_marks( lines )
+	marks, if_marks, funcs, funcs_names = FindMarks( lines )
 	eofln = 0		#End Of File Line
 	
 	lgn.info("%s%s.py: Schön Core Alpha v.0.1.0 Assembler." % (bf, __name__))
@@ -461,7 +425,7 @@ def Assemble( filename: str, dest_name: str ):
 		nextLines = [None,None,None]
 		vars = ["" for i in range(10)]
 		t = lines[ln_n]
-		tt = gvt( t )
+		tt = GetVariableType( t )
 		if tt == "bin":
 			lines[ln_n] = str( bm.btd([int(i) for i in t[2:]]) )
 		elif tt == "hex":
@@ -496,7 +460,7 @@ def Assemble( filename: str, dest_name: str ):
 			for i in vars:
 				try:
 					t = vars[iint][2:]
-					tt = gvt( vars[iint] )
+					tt = GetVariableType( vars[iint] )
 					if tt == "bin":
 						vars[iint] = str( bm.btd([int(i) for i in t]) )
 					elif tt == "hex":
@@ -535,7 +499,7 @@ def Assemble( filename: str, dest_name: str ):
 					function_names[1][5]: 2,
 					function_names[3][0]: 0
 				}
-				while inline( True, ln_n + 1 + rel_rel_ln, filename, used_in_escape ):
+				while HandleSEI( ln_n + 1 + rel_rel_ln, lines, used_in_escape ):
 					try:
 						temp_unused_var = lines[ln_n + rel_ln + rel_rel_ln].split()
 						temp_func = temp_unused_var.pop( 0 )
@@ -584,7 +548,7 @@ def Assemble( filename: str, dest_name: str ):
 				
 				function_names_index = function_names[MainType].index(func_var)
 					
-				bvl, bvi = get_var_order(
+				bvl, bvi = GetVariableOrder(
 					MainType, 
 					function_names[MainType].index(func_var),
 					bvl,
@@ -601,7 +565,7 @@ def Assemble( filename: str, dest_name: str ):
 					except Exception:
 						break
 					try:
-						bin_vars.append(bm.dtb( getParIndex( [MainType,function_names_index,i], vars[i] ), bvl[i] ))
+						bin_vars.append(bm.dtb( GetParameterIndex( [MainType,function_names_index,i], vars[i] ), bvl[i] ))
 					except Exception:
 						lgn.critical("If: Error: ln: %s: Incorrect variable input" % (ln_n + 1))
 						raise Exception
@@ -645,21 +609,18 @@ def Assemble( filename: str, dest_name: str ):
 			full_binary_function[13:19] = bm.dtb(int(vars[3]), 5)
 			nextLines[0] = bm.dtb(int(vars[1]))
 		elif func_var == function_names[3][1]:
-			# print("ELSE:")
 			full_binary_function[5] = 1
 			nextLines[0] = None
 			t = if_marks[ str( il - 1 ) ]
-			# print("t: %s" % (t))
 			for i, _ in enumerate(t):
 				if t[str(i)]["0"] == 0:
-					# print("ln: %s" % (t[str(i)]["1"] ) )
 					nextLines[0] = bm.dtb( getBinLine( lines, t[str(i)]["1"], marks ) )
 					break
 			if nextLines[0] == None:
 				raise CustomException("Error: ln %s: if statement was not encoded right, 0" % (ln_n + 1))
 		elif func_var == function_names[3][2]:
 			full_binary_function = [0 for i in range( bw )]
-			t_bin_vars[0] = bm.dtb( getParIndex( [0,0,0],vars[0] ) + 1 )
+			t_bin_vars[0] = bm.dtb( GetParameterIndex( [0,0,0],vars[0] ) + 1 )
 			nextLines[0] = None
 			nextLines[1] = [0 for i in range( bw )]
 			for i in range( 4 ):
@@ -692,7 +653,7 @@ def Assemble( filename: str, dest_name: str ):
 		elif func_var in sei or func_var == function_names[3][0] or func_var == "":
 			pass
 		else:
-			t = gvt( lines[ln_n] )
+			t = GetVariableType( lines[ln_n] )
 			tt = lines[ln_n].rstrip()
 			if t == "bin":
 				full_binary_function = bm.dtb(bm.btd([int(i) for i in tt[2:]]))
@@ -701,7 +662,7 @@ def Assemble( filename: str, dest_name: str ):
 			elif t == "int":
 				full_binary_function = bm.dtb(int( tt ))
 			else:
-				func_num = getFuncNum( func_var )				#Logical function number
+				func_num = GetFunctionIndex( func_var )				#Logical function number
 				f_func_num = func_num
 				try:
 					bin_func = bm.dtb( func_num, 4 )				#Function number converted to binary
@@ -723,7 +684,7 @@ def Assemble( filename: str, dest_name: str ):
 				if MainType == None:
 					raise NameError
 				
-				bvl, bvi = get_var_order(
+				bvl, bvi = GetVariableOrder(
 					MainType, 
 					function_names[MainType].index(func_var),
 					bvl,
@@ -737,7 +698,7 @@ def Assemble( filename: str, dest_name: str ):
 				if func_var == function_names[2][0]:
 					is_alu = 1
 					try:
-						bin_func = bm.dtb( getParIndex( [2,0,2], vars[2] ), 4 )
+						bin_func = bm.dtb( GetParameterIndex( [2,0,2], vars[2] ), 4 )
 					except ValueError:
 						lgn.critical("Compute: ln %s: Error, invalid variables." % (ln_n + 1))
 						return -1
@@ -750,28 +711,18 @@ def Assemble( filename: str, dest_name: str ):
 								if vars[7] == "float":
 									bin_vars[7] = [1,0]
 									break
-								# bin_vars[i] = bm.dtb(getParIndex( [2,0,i], vars[i] ), bvl[i])
 							except Exception:
 								break
-						elif getParIndex( [2,0,i], vars[i] ) == "pass":
+						elif GetParameterIndex( [2,0,i], vars[i] ) == "pass":
 							break
 						else:
-							bin_vars[i] = bm.dtb( getParIndex( [2,0,i], vars[i] ), bvl[i] )
-					# except ValueError:
-						# lgn.critical("Compute: ln %s: Error, invalid variables." % (ln_n + 1))
-						# return -1
+							bin_vars[i] = bm.dtb( GetParameterIndex( [2,0,i], vars[i] ), bvl[i] )
 				else:
 					is_alu = 0
 					function_names_index = function_names[MainType].index( func_var )
 					for i in range(function_var_amount[1][function_names_index]):
-						# try:
 						temp_type = function_params[MainType][f_func_num][i][0]
-						# except Exception:
-							# break
-						# try:
-						bin_vars[i] = bm.dtb( getParIndex( [MainType,function_names_index,i], vars[i] ), bvl[i] )
-						# except Exception:
-							# raise CustomException("Error: ln %s, Incorrect variable input." % (ln_n + 1))
+						bin_vars[i] = bm.dtb( GetParameterIndex( [MainType,function_names_index,i], vars[i] ), bvl[i] )
 						if bin_vars[i] == "pass":
 							bin_vars[i] = None
 							break
