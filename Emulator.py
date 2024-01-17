@@ -115,6 +115,37 @@ class ALUConfig(Enum):
 	SETFLAGS = 10
 	BREGISTER = 8
 
+class ALUType(Enum):
+	int: 0
+	float: 1
+	char: 2
+	string: 3
+	bool: 4
+	array: 5
+	list: 6
+
+class ALUIntFunction(Enum):
+	add: 0
+	sub: 1
+	mul: 2
+	div: 3
+	land: 4
+	lor: 5
+	lxor: 6
+	lnot: 7
+
+class ALUFloatFunction(Enum):
+	add: 0
+	sub: 1
+	mul: 2
+	div: 3
+
+class ALUStringFunction(Enum):
+	char_append: 0
+	string_append: 1
+	char_read: 2
+	char_write: 3
+
 class RuntimeVariables(Enum):
 	FUNCTIONVARIABLE = 0
 	LOGICALALU = 1
@@ -212,7 +243,7 @@ buffer = bm.dtb(0)
 ################################################
 #Need update!
 ################################################
-def alu():		#//Update for new ALU
+def alu(instruction_variables=None):		#//Update for new ALU
 	"""alu() -> executes arithmetic and logic operations based on flags set and registers
 	Returns: return code: 1 for function completed succesfully or passes any errors
 	"""
@@ -224,8 +255,8 @@ def alu():		#//Update for new ALU
 	set_list = reg(ReadWrite.READ, ProtReg.SETLIST, RegType.PROTECTED)
 	spec_func = reg(ReadWrite.READ, ALUConfig.SPECIALFUNCTION, RegType.PROTECTED)
 	ln = reg(ReadWrite.READ, ProtReg.PROGRAMCOUNTER, RegType.PROTECTED)
-	func = reg(ReadWrite.READ, ALUConfig.ALUFUNCTION, RegType.ALU)
-	func = bm.blts(func[0:4])
+	func = bm.btd(reg(ReadWrite.READ, ALUConfig.ALUFUNCTION, RegType.ALU)[0:4])
+	type = instruction_variables[RuntimeVariables.VARIABLEA.value]
 	
 	#Get input B or 1 for increment or decrement
 	if ena_list[ALUConfig.PROGRAMCOUNTERINCREMENT.value] or ena_list[ALUConfig.INCREMENT.value] or ena_list[ALUConfig.DECREMENT.value]:
@@ -249,62 +280,46 @@ def alu():		#//Update for new ALU
 	#Compute computation
 	q = []
 	co = 0
-	if spec_func[0] == 1:	#If it is a float operation
-		lgn.debug("ALU: FLOAT.")
-		if func == "0000":
-			q, co = g.ula(num_a, num_b)
-		elif func == "1000":	#Subraction
-			q, co = g.uls(num_a, num_b)
-		elif func == "0100":	#Multiplication
-			q = g.umul(num_a, num_b)
-		elif func == "1100":	#Divivision
-			try:
-				q = g.udiv(num_a, num_b)
-			except ZeroDivisionError:
-				lgn.critical("ALU: Error: Can't divide by zero at line %s. (%s/%s)" % (bm.btd(ln), bm.user_btd(num_a), bm.user_btd(num_b)))
-				raise ZeroDivisionError
-			except Exception:
-				lgn.critical("ALU: Error: Unknown error.")
-				raise Exception
-		else:					#Error
-			lgn.critical("ALU: Invalid function call at line %s" % (bm.btd(ln)))
-			lgn.info("ALU: Function: %s" % (bm.blts(func)))
-			raise Exception
-	else:
-		if func == "0000" and ena_list[ALUConfig.DECREMENT.value] == 0 or ena_list[ALUConfig.INCREMENT.value]:	#Addition
-			q, co = g.la(num_a, num_b)
-		elif func == "1000" or ena_list[ALUConfig.DECREMENT.value]:	#Subraction
-			q, co = g.ls(num_a, num_b)
-		elif func == "0100":	#Multiplication
-			q = g.mul(num_a, num_b)
-		elif func == "1100":	#Divivision
-			try:
-				q = g.div(num_a, num_b)
-			except ZeroDivisionError:
-				lgn.critical("ALU: Error: Can't divide by zero.")
-				lgn.info("Zero division at line %s." % (bm.btd(ln)))
-				raise ZeroDivisionError
-		elif func == "0010":	#Logical and
-			q = g.al(num_a, num_b)
-		elif func == "1010":	#Logical or
-			q = g.ol(num_a, num_b)
-		elif func == "0110":	#Logical exclusive or
-			q = g.xl(num_a, num_b)
-		elif func == "1110":	#Logical not
-			q = g.nl(num_a)
-		elif func == "0001":	#Logical shift
-			if bm.btd(spec_func) == 1:
-				q, co = shift(num_b, bm.btd(num_a), 0)
-			else:
-				q, co = shift(num_b, bm.btd(num_a))
-		elif func == "1111":	#Compare
-			lgn.info("ALU: CMP")
-			q = num_b
-			lgn.info("ALU: %s cmp %s" % (bm.btd(num_a), bm.btd(num_b)))
-			lgn.info("CMP: %s" % (bm.blts(comp)))
-		else:					#Error
-			lgn.critical("ALU: Invalid function call at line %s" % (bm.btd(ln)))
-			raise Exception
+	
+	if type == ALUType.int.value:
+		if func == ALUIntFunction.add.value:
+			q = bm.dtb(bm.btd(num_a) + bm.btd(num_b))
+		elif func == ALUIntFunction.sub.value:
+			q = bm.dtb(bm.btd(num_a) - bm.btd(num_b))
+		elif func == ALUIntFunction.mul.value:
+			q = bm.dtb(bm.btd(num_a) * bm.btd(num_b))
+		elif func == ALUIntFunction.div.value:
+			q = bm.dtb(bm.btd(num_a) / bm.btd(num_b))
+		elif func == ALUIntFunction.land.value:
+			q = bm.dtb(g.a(num_a, num_b))
+		elif func == ALUIntFunction.lor.value:
+			q = bm.dtb(g.o(num_a, num_b))
+		elif func == ALUIntFunction.lxor.value:
+			q = bm.dtb(g.x(num_a, num_b))
+		elif func == ALUIntFunction.lnot.value:
+			q = bm.dtb(g.n(num_a))
+		else:
+			lgn.CRITICAL("Error: invalid ALU function at line %s" % (bm.btd(ln)))
+	elif type == ALUType.float.value:
+		if func == ALUFloatFunction.add.value:
+			q = bm.user_dtb(bm.user_btd(num_a) + bm.user_btd(num_b))
+		elif func == ALUFloatFunction.sub.value:
+			q = bm.user_dtb(bm.user_btd(num_a) - bm.user_btd(num_b))
+		elif func == ALUFloatFunction.mul.value:
+			q = bm.user_dtb(bm.user_btd(num_a) * bm.user_btd(num_b))
+		elif func == ALUFloatFunction.div.value:
+			q = bm.user_dtb(bm.user_btd(num_a) / bm.user_btd(num_b))
+	elif type == ALUType.char.value:
+		pass
+	elif type == ALUType.string.value:
+		if func == ALUStringFunction.char_append.value:
+			q = bm.string_char_append(num_a, num_b)
+		elif func == ALUStringFunction.string_append.value:
+			q = bm.string_string_append(num_a, num_b)
+		elif func == ALUStringFunction.char_read.value:
+			q = bm.string_char_read(num_a, num_b)
+			
+
 	
 	#Manage output
 	comp.append(co)
@@ -320,20 +335,20 @@ def alu():		#//Update for new ALU
 #----------------------------------------------------------
 #Update ALU test for improved testing
 #Test ALU
-try:
-	lgn.debug("ALU: Testing integrity of ALU.")
-	buf(1, bm.user_dtb(5))
-	reg(ReadWrite.WRITE, ALUConfig.BREGISTER, RegType.ALU, bm.user_dtb(3))
-	reg(ReadWrite.WRITE, ALUConfig.ALUFUNCTION, RegType.ALU, bm.dtb(0, 4))
-	reg(ReadWrite.WRITE, ALUConfig.SPECIALFUNCTION, RegType.PROTECTED, bm.dtb(1, 1))
-	alu_r = alu()
-	if alu_r == 1:
-		lgn.debug("ALU tested.")
-	else:
-		lgn.critical("ALU: Unknown Error.")
-except Exception:
-	lgn.critical(EmulatorRuntimeError.ALUNOTINITIATED.value)
-	raise RuntimeError
+# try:
+# 	lgn.debug("ALU: Testing integrity of ALU.")
+# 	buf(1, bm.user_dtb(5))
+# 	reg(ReadWrite.WRITE, ALUConfig.BREGISTER, RegType.ALU, bm.user_dtb(3))
+# 	reg(ReadWrite.WRITE, ALUConfig.ALUFUNCTION, RegType.ALU, bm.dtb(0, 4))
+# 	reg(ReadWrite.WRITE, ALUConfig.SPECIALFUNCTION, RegType.PROTECTED, bm.dtb(1, 1))
+# 	alu_r = alu()
+# 	if alu_r == 1:
+# 		lgn.debug("ALU tested.")
+# 	else:
+# 		lgn.critical("ALU: Unknown Error.")
+# except Exception:
+# 	lgn.critical(EmulatorRuntimeError.ALUNOTINITIATED.value)
+# 	raise RuntimeError
 
 def pci():
 	ena_list = reg(ReadWrite.READ, ProtReg.ENABLELIST, RegType.PROTECTED)
@@ -688,7 +703,7 @@ def execute(set_list, ena_list, gui=False,
 	if ena_list[2]:		#aor 
 		var = reg(ReadWrite.READ, ProtReg.AOR, RegType.PROTECTED)
 	if ena_list[3]:		#Increment
-		alu()
+		alu(variables)
 	if ena_list[4]:		#Decrement
 		alu()
 	if ena_list[5]:		#ramd 
@@ -909,7 +924,7 @@ def run(filename, gui=False, print_line_nr=False,
 			if q == 1:		#EXIT_SIGNAL
 				if time_runtime:
 					end_time = time.time()
-					lgb.debug("elapsed time: %s" % (end_time-start_time))
+					lgn.debug("elapsed time: %s" % (end_time-start_time))
 					return [1, end_time-start_time]
 				lgn.debug("Run: Program returned with exit code 1.")
 				return 1

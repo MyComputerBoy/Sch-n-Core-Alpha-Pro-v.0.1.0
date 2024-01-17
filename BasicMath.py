@@ -8,6 +8,8 @@ import GateLevel as g
 
 bw = BaseCPUInfo.bit_width
 
+string_index = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%^&*()_+-=[];'\\,./{}:||<>? "
+
 #Convert floating point to binary representation
 def dtb( int, l=bw ):
 	q = []
@@ -16,7 +18,8 @@ def dtb( int, l=bw ):
 		int = m.floor( int/2 )
 	return q
 
-def user_dtb(input, l=bw):
+#Floating point conversion
+def user_dtb(input):
 	#Handle different inputs
 	q = []
 	sign = 1
@@ -30,7 +33,7 @@ def user_dtb(input, l=bw):
 		try:
 			exponent = 128-m.floor(m.log(input, 2))
 		except ValueError:
-			print("Deciman to binary: Error: Domain error.")
+			print("Decimal to binary: Error: Domain error.")
 			raise ValueError
 	
 	#Manage proper exponent and mantissa
@@ -58,8 +61,7 @@ def btd( list, leng = bw ):
 			q += 0
 	return q
 
-def user_btd( input, l=bw ):
-	q = 0
+def user_btd( input ):
 	try:
 		sign = input[0]
 		exponent = btd(input[1:9])
@@ -72,6 +74,37 @@ def user_btd( input, l=bw ):
 	if sign == 1:
 		return v
 	return -v
+
+def string_char_append(num_a, num_b):
+	if btd(num_a[0:8]) == 0:
+		num_a[0:8] = num_b[0:8]
+	elif btd(num_a[8:16]) == 0:
+		num_a[8:16] = num_b[0:8]
+	elif btd(num_a[16:24]) == 0:
+		num_a[16:24] = num_b[0:8]
+	elif btd(num_a[24:32]) == 0:
+		num_a[24:32] = num_b[0:8]
+	return num_a
+
+def string_string_append(num_a, num_b):
+	if btd(num_a[0:8]) == 0:
+		num_a[0:8] = num_b
+	elif btd(num_a[8:16]) == 0:
+		num_a[8:16] = num_b[:24]
+	elif btd(num_a[16:24]) == 0:
+		num_a[16:24] = num_b[:16]
+	elif btd(num_a[24:32]) == 0:
+		num_a[24:32] = num_b[:8]
+	return num_a
+
+def string_char_read(num_a, num_b):
+	b_int = btd(num_b)
+	return num_a[btd(b_int):b_int+8]
+
+def string_char_write(num_a, num_b, num_c):
+	b_int = btd(num_b)
+	num_a[btd(b_int):b_int+8] = num_c[:8] 
+	return num_a
 
 #Bitwise reverse list
 def reverse( list ):

@@ -57,10 +57,10 @@ def nl(la):
 #Logical shift up/down
 def shift(list, leng, ud=1):
 	if ud == 1:
-		tq = bm.dtb(math.floor( bm.btd(list) * 2**leng))
+		tq = bm.dtb(m.floor( bm.btd(list) * 2**leng))
 		return tq, list[mod(bw-leng,bw)]
 	
-	tq = bm.dtb(math.floor(bm.btd(list) / 2**leng))
+	tq = bm.dtb(m.floor(bm.btd(list) / 2**leng))
 	return tq, list[mod(leng-1,bw)]
 
 def la(la, lb, ci=0):

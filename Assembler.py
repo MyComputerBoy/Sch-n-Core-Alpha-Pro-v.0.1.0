@@ -15,8 +15,6 @@ Assemble(filename: str, dest_name: str) -> Function to call for assembly of file
 
 """
 
-#Schön Assembler for Schön Core Alpha v.0.1.0
-
 #Import libraries
 import BaseCPUInfo
 import importlib as il 
