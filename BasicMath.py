@@ -75,6 +75,14 @@ def user_btd( input ):
 		return v
 	return -v
 
+def char_read(num_a, num_b):
+	return num_a[btd(num_b):btd(num_b)+8]
+
+def char_Write(num_a, num_b, num_c):
+	c_int = btd(num_c)
+	num_a[0:8] = num_b[c_int:c_int+8]
+	return num_a
+
 def string_char_append(num_a, num_b):
 	if btd(num_a[0:8]) == 0:
 		num_a[0:8] = num_b[0:8]
@@ -103,7 +111,7 @@ def string_char_read(num_a, num_b):
 
 def string_char_write(num_a, num_b, num_c):
 	c_int = btd(num_c)
-	num_a[btd(c_int):c_int+8] = num_b[:8] 
+	num_a[c_int:c_int+8] = num_b[:8] 
 	return num_a
 
 def bool_read(num_a, num_b):

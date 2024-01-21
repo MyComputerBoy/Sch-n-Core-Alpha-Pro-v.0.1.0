@@ -140,6 +140,10 @@ class ALUFloatFunction(Enum):
 	mul: 2
 	div: 3
 
+class ALUCharFunction(Enum):
+	read: 0
+	write: 1
+
 class ALUStringFunction(Enum):
 	char_append: 0
 	string_append: 1
@@ -170,6 +174,14 @@ class EmulatorRuntimeError(Enum):
 	ALUNOTINITIATED = "ALU: Couldn't initiate."
 	ILLEGALFUNCTION = "Offset: Illegal function called."
 
+class SuspendCentralUnitStates(Enum):
+	not_applicable: -1
+	alu_array_execution: 0
+	alu_list_execution: 1
+
+suspend_central_unit_processing = False
+suspend_central_unit_state = SuspendCentralUnitStates.not_applicable.value
+
 #Functions to manage buffer, registers and other memory storage units
 def buf(rw, list=bz):
 	global buffer 
@@ -187,7 +199,7 @@ def rom(rw, index):
 	
 	return rom_data[index]
 
-def ram(rw, index, value=None, preset=None):
+def ram(rw, index, value=None):
 	"""ram(rw, index, value=None, preset=None) -> Handles Random Access Memory read/write
 	Parameters:
 	
@@ -205,13 +217,10 @@ def ram(rw, index, value=None, preset=None):
 	
 	if rw == 0:
 		return ramv[index]
-	if isinstance(preset,type(None)) == False:
-		ramv[index] = preset
-		return 
 	ramv[index] = value
 	return
 
-def reg(rw, index, reg_type, value=None, preset=None):
+def reg(rw, index, reg_type, value=None):
 	"""reg(rw, index, reg_type, value=None, preset=None) -> Handles register read/write
 	Parameters:
 	
@@ -259,6 +268,7 @@ def alu(instruction_variables=None):		#//Update for new ALU
 	"""
 	
 	global reg
+	global suspend_central_unit_processing
 	
 	#Get inputs
 	ena_list = reg(ReadWrite.READ, ProtReg.ENABLELIST, RegType.PROTECTED)
@@ -322,7 +332,11 @@ def alu(instruction_variables=None):		#//Update for new ALU
 		else:
 			lgn.CRITICAL("Error: invalid ALU function at line %s" % (bm.btd(ln)))
 	elif type == ALUType.char.value:
-		pass
+		if function == ALUCharFunction.read.value:
+			q = bm.char_read(num_a, num_b)
+		elif function == ALUCharFunction.write.value:
+			index = instruction_variables[RuntimeVariables.VARIABLEA.value] + instruction_variables[RuntimeVariables.VARIABLEB.value]
+			q = bm.char_Write(num_a, num_b, index)
 	elif type == ALUType.string.value:
 		if func == ALUStringFunction.char_append.value:
 			q = bm.string_char_append(num_a, num_b)
@@ -649,6 +663,33 @@ FunctionDefinitions = [
 	],
 ]
 
+SuspendCentralUnitDefinitions = [
+
+	[	#Set pins
+
+		[	#ALU Array execution
+
+			[	#Array declare size
+
+			]
+
+		]
+
+	],
+	[	#Enable pins
+
+		[	#ALU Array execution
+
+			[	#Array declare size
+
+			]
+
+		]
+
+	]
+
+]
+
 #Set Set Pins
 #pci, pc, abr, cb, aor, rama, ramd, roma, gpioa, gpiod, flg, pid, reg_a, reg_b, reg_c, cui, sp, ism, if
 def set(list):		
@@ -841,6 +882,8 @@ def single_instruction(reset=0, gui=False,
 	Returns: error code: -1 for error, 0 for instruction completed but continue and 1 for completed and exit
 	"""
 	global reg
+	global suspend_central_unit_processing
+	global suspend_central_unit_state
 	
 	#Handle reset
 	if reset == 1:	#Reset
@@ -907,6 +950,17 @@ def single_instruction(reset=0, gui=False,
 		reg(ReadWrite.WRITE, ALUConfig.SPECIALFUNCTION, RegType.PROTECTED, bm.dtb(2))
 	
 	#Execute operation
+	if suspend_central_unit_processing:
+		if suspend_central_unit_state != SuspendCentralUnitStates.not_applicable.value:
+			for i, _ in enumerate(SuspendCentralUnitDefinitions[0][suspend_central_unit_state.value]):
+				lgn.debug("SUSPENDED RUN: %s" % (i))
+				execute(SuspendCentralUnitDefinitions[0][suspend_central_unit_state.value][i],
+						SuspendCentralUnitDefinitions[0][suspend_central_unit_state.value][i],
+						gui, instruction_vars
+			)
+			suspend_central_unit_state = SuspendCentralUnitStates.not_applicable.value
+			return 0
+		
 	for i, _ in enumerate(FunctionDefinitions[0][_ofs]):
 		lgn.debug("RUN: %s" % (i))
 		execute(FunctionDefinitions[0][_ofs][i], 
