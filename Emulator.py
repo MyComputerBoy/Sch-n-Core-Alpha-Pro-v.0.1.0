@@ -115,6 +115,11 @@ class ALUConfig(Enum):
 	SETFLAGS = 10
 	BREGISTER = 8
 
+class ALUReturnStates(Enum):
+	NoError: 0
+	UndefinedError: 1
+	InvalidFunction: 2
+
 class ALUType(Enum):
 	int: 0
 	float: 1
@@ -273,7 +278,6 @@ def alu(instruction_variables=None):		#//Update for new ALU
 	#Get inputs
 	ena_list = reg(ReadWrite.READ, ProtReg.ENABLELIST, RegType.PROTECTED)
 	set_list = reg(ReadWrite.READ, ProtReg.SETLIST, RegType.PROTECTED)
-	spec_func = reg(ReadWrite.READ, ALUConfig.SPECIALFUNCTION, RegType.PROTECTED)
 	ln = reg(ReadWrite.READ, ProtReg.PROGRAMCOUNTER, RegType.PROTECTED)
 	func = bm.btd(reg(ReadWrite.READ, ALUConfig.ALUFUNCTION, RegType.ALU)[0:4])
 	type = instruction_variables[RuntimeVariables.VARIABLEA.value]
@@ -320,6 +324,7 @@ def alu(instruction_variables=None):		#//Update for new ALU
 			q = bm.dtb(g.n(num_a))
 		else:
 			lgn.CRITICAL("Error: invalid ALU function at line %s" % (bm.btd(ln)))
+			return ALUReturnStates.InvalidFunction
 	elif type == ALUType.float.value:
 		if func == ALUFloatFunction.add.value:
 			q = bm.user_dtb(bm.user_btd(num_a) + bm.user_btd(num_b))
@@ -331,12 +336,15 @@ def alu(instruction_variables=None):		#//Update for new ALU
 			q = bm.user_dtb(bm.user_btd(num_a) / bm.user_btd(num_b))
 		else:
 			lgn.CRITICAL("Error: invalid ALU function at line %s" % (bm.btd(ln)))
+			return ALUReturnStates.InvalidFunction
 	elif type == ALUType.char.value:
 		if function == ALUCharFunction.read.value:
 			q = bm.char_read(num_a, num_b)
 		elif function == ALUCharFunction.write.value:
 			index = instruction_variables[RuntimeVariables.VARIABLEA.value] + instruction_variables[RuntimeVariables.VARIABLEB.value]
 			q = bm.char_Write(num_a, num_b, index)
+		else:
+			return ALUReturnStates.InvalidFunction
 	elif type == ALUType.string.value:
 		if func == ALUStringFunction.char_append.value:
 			q = bm.string_char_append(num_a, num_b)
@@ -349,6 +357,7 @@ def alu(instruction_variables=None):		#//Update for new ALU
 			q = bm.string_char_write(num_a, num_b, index)
 		else:
 			lgn.CRITICAL("Error: invalid ALU function at line %s" % (bm.btd(ln)))
+			return ALUReturnStates.InvalidFunction
 	elif type == ALUType.bool.value:
 		if func == ALUBoolFunction.read.value:
 			q = bm.bool_read(num_a, num_b)
@@ -356,7 +365,8 @@ def alu(instruction_variables=None):		#//Update for new ALU
 			q = bm.bool_write(num_a, num_b, instruction_variables[RuntimeVariables.VARIABLEA][0])
 		else:
 			lgn.CRITICAL("Error: invalid ALU function at line %s" % (bm.btd(ln)))
-	elif type == ALUType.array:
+			return ALUReturnStates.InvalidFunction
+	elif type == ALUType.array.value:
 		if func == ALUArrayFunction.declare_size.value:
 			pass
 		elif func == ALUArrayFunction.declare_item_length.value:
@@ -367,6 +377,7 @@ def alu(instruction_variables=None):		#//Update for new ALU
 			pass
 		else:
 			lgn.CRITICAL("Error: invalid ALU function at line %s" % (bm.btd(ln)))
+			return ALUReturnStates.InvalidFunction
 	
 	#Manage output
 	comp.append(co)
@@ -376,8 +387,7 @@ def alu(instruction_variables=None):		#//Update for new ALU
 	if set_list[ALUConfig.SETFLAGS.value]:
 		reg(ReadWrite.WRITE, ProtReg.FLAGS, RegType.PROTECTED, comp)
 	
-	#Return 1 for indication of no errors encountered
-	return 1
+	return ALUReturnStates.NoError
 
 #----------------------------------------------------------
 #Update ALU test for improved testing
@@ -828,7 +838,7 @@ def execute(set_list, ena_list, gui=False,
 			reg(ReadWrite.WRITE, ProtReg.PROGRAMCOUNTER, RegType.PROTECTED, var)
 	if set_list[4]:	#aor
 		alu_r = alu()
-		if alu_r != 1:
+		if alu_r != ALUReturnStates.NoError:
 			lgn.warning(EmulatorRuntimeError.ALUFAILED.value)
 			raise Exception
 	if set_list[5]:	#rama
@@ -866,7 +876,6 @@ def execute(set_list, ena_list, gui=False,
 
 #Run Single Instruction
 def single_instruction(reset=0, gui=False, 
-					   print_line_nr=False, 
 					   force_show_exceptions=False):
 	"""single_instruction(r=0,gui=False, print_line_nr=False, force_show_exceptions=False) -> Runs a single instruction
 	Parameters:
@@ -886,7 +895,7 @@ def single_instruction(reset=0, gui=False,
 	global suspend_central_unit_state
 	
 	#Handle reset
-	if reset == 1:	#Reset
+	if reset != 0:	#Reset
 		cls(1,1,1)
 		if force_show_exceptions:
 			lgn.debug("Cleared registers")
@@ -915,8 +924,6 @@ def single_instruction(reset=0, gui=False,
 		if force_show_exceptions:
 			lgn.debug("EXIT_SIGNAL.")
 		return 1
-		
-	comp = reg(ReadWrite.READ, ProtReg.AOR, RegType.PROTECTED)
 	
 	#get input variables
 	#Where the different variables start in input space
