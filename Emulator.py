@@ -146,6 +146,16 @@ class ALUStringFunction(Enum):
 	char_read: 2
 	char_write: 3
 
+class ALUBoolFunction(Enum):
+	read = 0
+	write = 1
+
+class ALUArrayFunction(Enum):
+	declare_size = 0
+	declare_item_length = 1
+	read_element = 2
+	write_element = 3
+
 class RuntimeVariables(Enum):
 	FUNCTIONVARIABLE = 0
 	LOGICALALU = 1
@@ -277,10 +287,10 @@ def alu(instruction_variables=None):		#//Update for new ALU
 	else:
 		comp = [0,0,1]
 	
-	#Compute computation
 	q = []
 	co = 0
 	
+	#Compute computation
 	if type == ALUType.int.value:
 		if func == ALUIntFunction.add.value:
 			q = bm.dtb(bm.btd(num_a) + bm.btd(num_b))
@@ -309,6 +319,8 @@ def alu(instruction_variables=None):		#//Update for new ALU
 			q = bm.user_dtb(bm.user_btd(num_a) * bm.user_btd(num_b))
 		elif func == ALUFloatFunction.div.value:
 			q = bm.user_dtb(bm.user_btd(num_a) / bm.user_btd(num_b))
+		else:
+			lgn.CRITICAL("Error: invalid ALU function at line %s" % (bm.btd(ln)))
 	elif type == ALUType.char.value:
 		pass
 	elif type == ALUType.string.value:
@@ -318,8 +330,29 @@ def alu(instruction_variables=None):		#//Update for new ALU
 			q = bm.string_string_append(num_a, num_b)
 		elif func == ALUStringFunction.char_read.value:
 			q = bm.string_char_read(num_a, num_b)
-			
-
+		elif func == ALUStringFunction.char_write.value:
+			index = instruction_variables[RuntimeVariables.VARIABLEA.value] + instruction_variables[RuntimeVariables.VARIABLEB.value]
+			q = bm.string_char_write(num_a, num_b, index)
+		else:
+			lgn.CRITICAL("Error: invalid ALU function at line %s" % (bm.btd(ln)))
+	elif type == ALUType.bool.value:
+		if func == ALUBoolFunction.read.value:
+			q = bm.bool_read(num_a, num_b)
+		elif func == ALUBoolFunction.write.value:
+			q = bm.bool_write(num_a, num_b, instruction_variables[RuntimeVariables.VARIABLEA][0])
+		else:
+			lgn.CRITICAL("Error: invalid ALU function at line %s" % (bm.btd(ln)))
+	elif type == ALUType.array:
+		if func == ALUArrayFunction.declare_size.value:
+			pass
+		elif func == ALUArrayFunction.declare_item_length.value:
+			pass
+		elif func == ALUArrayFunction.read_element.value:
+			pass
+		elif func == ALUArrayFunction.write_element.value:
+			pass
+		else:
+			lgn.CRITICAL("Error: invalid ALU function at line %s" % (bm.btd(ln)))
 	
 	#Manage output
 	comp.append(co)

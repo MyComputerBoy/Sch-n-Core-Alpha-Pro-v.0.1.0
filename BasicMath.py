@@ -102,9 +102,21 @@ def string_char_read(num_a, num_b):
 	return num_a[btd(b_int):b_int+8]
 
 def string_char_write(num_a, num_b, num_c):
-	b_int = btd(num_b)
-	num_a[btd(b_int):b_int+8] = num_c[:8] 
+	c_int = btd(num_c)
+	num_a[btd(c_int):c_int+8] = num_b[:8] 
 	return num_a
+
+def bool_read(num_a, num_b):
+	if btd(num_a[btd(num_b)]) == 0:
+		return False 
+	return True
+
+def bool_write(num_a, num_b, value):
+	num_a[btd(num_b)] = value
+	return num_a
+	
+def array_declare(num_a, num_b):
+	pass
 
 #Bitwise reverse list
 def reverse( list ):
