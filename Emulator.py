@@ -117,8 +117,13 @@ class ALUConfig(Enum):
 
 class ALUReturnStates(Enum):
 	NoError: 0
-	UndefinedError: 1
-	InvalidFunction: 2
+	SuspendingCentralProcessingExit: 1
+	UndefinedError: 2
+	InvalidFunction: 3
+
+	@staticmethod
+	def list():
+		return list(map(lambda c: c.value, ALUReturnStates))
 
 class ALUType(Enum):
 	int: 0
@@ -274,6 +279,7 @@ def alu(instruction_variables=None):		#//Update for new ALU
 	
 	global reg
 	global suspend_central_unit_processing
+	global suspend_central_unit_state
 	
 	#Get inputs
 	ena_list = reg(ReadWrite.READ, ProtReg.ENABLELIST, RegType.PROTECTED)
@@ -367,14 +373,9 @@ def alu(instruction_variables=None):		#//Update for new ALU
 			lgn.CRITICAL("Error: invalid ALU function at line %s" % (bm.btd(ln)))
 			return ALUReturnStates.InvalidFunction
 	elif type == ALUType.array.value:
-		if func == ALUArrayFunction.declare_size.value:
-			pass
-		elif func == ALUArrayFunction.declare_item_length.value:
-			pass
-		elif func == ALUArrayFunction.read_element.value:
-			pass
-		elif func == ALUArrayFunction.write_element.value:
-			pass
+		suspend_central_unit_state = SuspendCentralUnitStates.alu_array_execution
+		if func in ALUArrayFunction.list():
+			return ALUReturnStates.SuspendingCentralProcessingExit
 		else:
 			lgn.CRITICAL("Error: invalid ALU function at line %s" % (bm.btd(ln)))
 			return ALUReturnStates.InvalidFunction
@@ -691,7 +692,7 @@ SuspendCentralUnitDefinitions = [
 		[	#ALU Array execution
 
 			[	#Array declare size
-
+				
 			]
 
 		]
@@ -703,11 +704,15 @@ SuspendCentralUnitDefinitions = [
 #Set Set Pins
 #pci, pc, abr, cb, aor, rama, ramd, roma, gpioa, gpiod, flg, pid, reg_a, reg_b, reg_c, cui, sp, ism, if
 def set(list):		
+	"""set(list) -> Function to set set pins
+	"""
 	reg(ReadWrite.WRITE, ProtReg.SETLIST, RegType.PROTECTED, list)
 
 #Set Enable Pins
 #pci, pc, aor, inc, decrement, ramd, romd, pid, gpi, reg_a, reg_b, reg_c, sp, ism, if
-def enable(list):		
+def enable(list):	
+	"""enable(list) -> Function to set enable pins
+	"""	
 	reg(ReadWrite.WRITE, ProtReg.ENABLELIST, RegType.PROTECTED, list)
 
 def sr(lst, comp, var_a=[0]):	#Should Run?
@@ -779,7 +784,7 @@ def execute(set_list, ena_list, gui=False,
 		reg_b = [bm.btd(reg_b[2:]),bm.btd(reg_b[:2])]
 		reg_c = [bm.btd(reg_c[2:]),bm.btd(reg_c[:2])]
 	except Exception:
-		pass
+		lgn.debug("Attempt at registers incomplete")
 	
 	#Enable actions:
 	if ena_list[1]:		#pc
@@ -821,13 +826,13 @@ def execute(set_list, ena_list, gui=False,
 	buf(1,var)
 	
 	#Set actions:
-	if set_list[1]:	#pc
+	if set_list[1]:		#pc
 		reg(ReadWrite.WRITE, ProtReg.PROGRAMCOUNTER, RegType.PROTECTED, var)
-	if set_list[2]:	#abr
+	if set_list[2]:		#abr
 		temp = buf(0)
 		lgn.debug("Execute: ALU B Register: %s" % (bm.user_btd(temp)))
 		reg(ReadWrite.WRITE, ALUConfig.BREGISTER, RegType.ALU, var)
-	if set_list[3]:	#conditional branch
+	if set_list[3]:		#conditional branch
 		comparison = reg(ReadWrite.READ, ProtReg.FLAGS, RegType.PROTECTED)
 		if isinstance(variables[2], type(None)):
 			lgn.critical("Execute: Comparison variable not given.")
@@ -836,22 +841,22 @@ def execute(set_list, ena_list, gui=False,
 		if variables[3][0] == 1 or bm.btd(g.al(comparison[0:4], variables[2])) == 0:
 			lgn.info("Conditional Branch: BRANCHED.")
 			reg(ReadWrite.WRITE, ProtReg.PROGRAMCOUNTER, RegType.PROTECTED, var)
-	if set_list[4]:	#aor
+	if set_list[4]:		#aor
 		alu_r = alu()
-		if alu_r != ALUReturnStates.NoError:
+		if alu_r == ALUReturnStates.UndefinedError or alu_r == ALUReturnStates.InvalidFunction:
 			lgn.warning(EmulatorRuntimeError.ALUFAILED.value)
 			raise Exception
-	if set_list[5]:	#rama
+	if set_list[5]:		#rama
 		reg(ReadWrite.WRITE, ProtReg.RAMADDRESS, RegType.PROTECTED, var)
-	if set_list[6]:	#ramd
+	if set_list[6]:		#ramd
 		tmp = reg(ReadWrite.READ, ProtReg.RAMADDRESS, RegType.PROTECTED)
 		lgn.debug("RAMD: %s -> %s" % (bm.btd(tmp), bm.user_btd(var)))
 		ram(ReadWrite.WRITE, bm.btd(tmp), var)
-	if set_list[7]:	#roma
+	if set_list[7]:		#roma
 		reg(ReadWrite.WRITE, ProtReg.ROMADDRESS, RegType.PROTECTED, var)
-	if set_list[8]:	#gpoa
+	if set_list[8]:		#gpoa
 		lgn.info("Set GPIO Address: %s" % (bm.btd(var)))
-	if set_list[9]:	#gpod
+	if set_list[9]:		#gpod
 		pr(var, gui)
 	if set_list[11]:	#pid
 		temp = reg(ReadWrite.READ, reg_a[0], reg_a[1])
@@ -871,7 +876,7 @@ def execute(set_list, ena_list, gui=False,
 	if set_list[16]:	#sp
 		lgn.debug("Stack pointer WRITE: %s" % (bm.btd(var)))
 		reg(ReadWrite.WRITE, ProtReg.STACKPOINTER, RegType.PROTECTED, var)
-	if set_list[0]:
+	if set_list[0]:		#PC Increment
 		pci()
 
 #Run Single Instruction
