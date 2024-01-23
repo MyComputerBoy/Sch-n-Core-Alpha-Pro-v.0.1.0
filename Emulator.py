@@ -120,6 +120,7 @@ class ALUReturnStates(Enum):
 	SuspendingCentralProcessingExit: 1
 	UndefinedError: 2
 	InvalidFunction: 3
+	InvalidType: 3
 
 	@staticmethod
 	def list():
@@ -169,6 +170,12 @@ class ALUArrayFunction(Enum):
 	declare_item_length = 1
 	read_element = 2
 	write_element = 3
+
+class SingleInstructionReturnStates(Enum):
+	NoErrorContinue: 0
+	NoErrorExit: 1
+	UnknownError: 2
+	InvalidFunction: 3
 
 class RuntimeVariables(Enum):
 	FUNCTIONVARIABLE = 0
@@ -373,13 +380,21 @@ def alu(instruction_variables=None):		#//Update for new ALU
 			lgn.CRITICAL("Error: invalid ALU function at line %s" % (bm.btd(ln)))
 			return ALUReturnStates.InvalidFunction
 	elif type == ALUType.array.value:
-		suspend_central_unit_state = SuspendCentralUnitStates.alu_array_execution
-		if func in ALUArrayFunction.list():
-			return ALUReturnStates.SuspendingCentralProcessingExit
-		else:
-			lgn.CRITICAL("Error: invalid ALU function at line %s" % (bm.btd(ln)))
-			return ALUReturnStates.InvalidFunction
-	
+		lgn.critical("Error: Array not implemented yet.")
+		return ALUReturnStates.InvalidFunction
+		# suspend_central_unit_state = SuspendCentralUnitStates.alu_array_execution
+		# if func in ALUArrayFunction.list():
+		# 	return ALUReturnStates.SuspendingCentralProcessingExit
+		# else:
+		# 	lgn.CRITICAL("Error: invalid ALU function at line %s" % (bm.btd(ln)))
+		# 	return ALUReturnStates.InvalidFunction
+	elif type == ALUType.list.value:
+		lgn.critical("Error: List not implemented yet.")
+		return ALUReturnStates.InvalidFunction
+	else:
+		lgn.CRITICAL("Error: invalid ALU type at line %s" % (bm.btd(ln)))
+		return ALUReturnStates.InvalidType
+
 	#Manage output
 	comp.append(co)
 	lgn.info("ALU: %s" % (comp))
@@ -393,20 +408,21 @@ def alu(instruction_variables=None):		#//Update for new ALU
 #----------------------------------------------------------
 #Update ALU test for improved testing
 #Test ALU
-# try:
-# 	lgn.debug("ALU: Testing integrity of ALU.")
-# 	buf(1, bm.user_dtb(5))
-# 	reg(ReadWrite.WRITE, ALUConfig.BREGISTER, RegType.ALU, bm.user_dtb(3))
-# 	reg(ReadWrite.WRITE, ALUConfig.ALUFUNCTION, RegType.ALU, bm.dtb(0, 4))
-# 	reg(ReadWrite.WRITE, ALUConfig.SPECIALFUNCTION, RegType.PROTECTED, bm.dtb(1, 1))
-# 	alu_r = alu()
-# 	if alu_r == 1:
-# 		lgn.debug("ALU tested.")
-# 	else:
-# 		lgn.critical("ALU: Unknown Error.")
-# except Exception:
-# 	lgn.critical(EmulatorRuntimeError.ALUNOTINITIATED.value)
-# 	raise RuntimeError
+def test_alu():
+	try:
+		lgn.debug("ALU: Testing integrity of ALU.")
+		buf(1, bm.user_dtb(5))
+		reg(ReadWrite.WRITE, ALUConfig.BREGISTER, RegType.ALU, bm.user_dtb(3))
+		reg(ReadWrite.WRITE, ALUConfig.ALUFUNCTION, RegType.ALU, bm.dtb(0, 4))
+		reg(ReadWrite.WRITE, ALUConfig.SPECIALFUNCTION, RegType.PROTECTED, bm.dtb(1, 1))
+		alu_r = alu()
+		if alu_r == 1:
+			lgn.debug("ALU tested.")
+		else:
+			lgn.critical("ALU: Unknown Error.")
+	except Exception:
+		lgn.critical(EmulatorRuntimeError.ALUNOTINITIATED.value)
+		raise RuntimeError
 
 def pci():
 	ena_list = reg(ReadWrite.READ, ProtReg.ENABLELIST, RegType.PROTECTED)
@@ -680,24 +696,66 @@ SuspendCentralUnitDefinitions = [
 
 		[	#ALU Array execution
 
-			[	#Array declare size
+			[	#declare size
+				[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+			],	
+			[	#declare object size
+				[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+			],
+			[	#read
+				[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+			],
+			[	#write
+				[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+			],
+		],
+		[	#ALU List execution
 
-			]
-
-		]
+			[	#get size
+				[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+			],	
+			[	#push
+				[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+			],
+			[	#pop
+				[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+			],
+		],
 
 	],
 	[	#Enable pins
 
 		[	#ALU Array execution
 
-			[	#Array declare size
-				
-			]
+			[	#declare size
+				[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+			],
+			[	#declare object size
+				[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+			],
+			[	#read
+				[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+			],
+			[	#write
+				[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+			],
 
-		]
+		],
+		[	#ALU List execution
 
-	]
+			[	#get size
+				[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+			],
+			[	#push
+				[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+			],
+			[	#pop
+				[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+			],
+
+		],
+
+	],
 
 ]
 
@@ -843,7 +901,7 @@ def execute(set_list, ena_list, gui=False,
 			reg(ReadWrite.WRITE, ProtReg.PROGRAMCOUNTER, RegType.PROTECTED, var)
 	if set_list[4]:		#aor
 		alu_r = alu()
-		if alu_r == ALUReturnStates.UndefinedError or alu_r == ALUReturnStates.InvalidFunction:
+		if alu_r == ALUReturnStates.UndefinedError or alu_r == ALUReturnStates.InvalidFunction or alu_r == ALUReturnStates.InvalidType:
 			lgn.warning(EmulatorRuntimeError.ALUFAILED.value)
 			raise Exception
 	if set_list[5]:		#rama
@@ -904,7 +962,7 @@ def single_instruction(reset=0, gui=False,
 		cls(1,1,1)
 		if force_show_exceptions:
 			lgn.debug("Cleared registers")
-		return 0
+		return SingleInstructionReturnStates.NoErrorContinue
 	
 	#Get program counter, mainly for debugging
 	ln = reg(ReadWrite.READ, ProtReg.PROGRAMCOUNTER, RegType.PROTECTED)
@@ -928,7 +986,7 @@ def single_instruction(reset=0, gui=False,
 	if exit_signal:
 		if force_show_exceptions:
 			lgn.debug("EXIT_SIGNAL.")
-		return 1
+		return SingleInstructionReturnStates.NoErrorExit
 	
 	#get input variables
 	#Where the different variables start in input space
@@ -949,7 +1007,7 @@ def single_instruction(reset=0, gui=False,
 	#Get offset from function list and meta information for debugging
 	_ofs, meta_func = ofs(bm.btd(instruction_vars[RuntimeVariables.FUNCTIONVARIABLE.value]), instruction_vars)
 	if _ofs == EmulatorRuntimeError.ILLEGALFUNCTION:
-		return -1
+		return SingleInstructionReturnStates.InvalidFunction
 	
 	#Make registers ready for execution
 	lgn.debug("SingleInstruction: MetaFunction: %s, ofs: %s" % (FunctionDefinitionMetaInfo[meta_func], _ofs))
@@ -971,7 +1029,7 @@ def single_instruction(reset=0, gui=False,
 						gui, instruction_vars
 			)
 			suspend_central_unit_state = SuspendCentralUnitStates.not_applicable.value
-			return 0
+			return SingleInstructionReturnStates.NoErrorContinue
 		
 	for i, _ in enumerate(FunctionDefinitions[0][_ofs]):
 		lgn.debug("RUN: %s" % (i))
@@ -980,7 +1038,7 @@ def single_instruction(reset=0, gui=False,
 				gui, instruction_vars)
 	
 	#Return 0 for indication of no errors encountered
-	return 0
+	return SingleInstructionReturnStates.NoErrorContinue
 
 def run(filename, gui=False, print_line_nr=False, 
 		force_show_exceptions=False,time_runtime=False,
@@ -1003,6 +1061,8 @@ def run(filename, gui=False, print_line_nr=False,
 	
 	#Handle logger
 	lgn.getLogger().setLevel(LOGLEVEL)
+
+	test_alu()
 	
 	#Reset CPU and initialise for execution
 	reg(ReadWrite.WRITE, ProtReg.CONTROLUNITINPUT, RegType.PROTECTED, bz)
@@ -1020,16 +1080,16 @@ def run(filename, gui=False, print_line_nr=False,
 	while True:
 		q = single_instruction(0, gui, print_line_nr, force_show_exceptions)
 		if isinstance(q, int):
-			if q == 1:		#EXIT_SIGNAL
+			if q == SingleInstructionReturnStates.NoErrorExit:		#EXIT_SIGNAL
 				if time_runtime:
 					end_time = time.time()
 					lgn.debug("elapsed time: %s" % (end_time-start_time))
 					return [1, end_time-start_time]
 				lgn.debug("Run: Program returned with exit code 1.")
 				return 1
-			elif q == -1:	#Error signal
-				lgn.critical("Error: %s.run(): return code -1, runtime stopped" % (__file__))
+			elif q == SingleInstructionReturnStates.InvalidFunction:	#Error signal
+				lgn.critical("Error: %s.run(): return code InvalidFunction, runtime stopped" % (__file__))
 				raise Exception
-			elif q != 0:	#Unknown error
+			elif q == SingleInstructionReturnStates.UnknownError:	#Unknown error
 				lgn.warning(q)
 				print(q)

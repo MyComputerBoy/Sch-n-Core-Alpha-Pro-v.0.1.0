@@ -122,9 +122,6 @@ def bool_read(num_a, num_b):
 def bool_write(num_a, num_b, value):
 	num_a[btd(num_b)] = value
 	return num_a
-	
-def array_declare(num_a, num_b):
-	pass
 
 #Bitwise reverse list
 def reverse( list ):
