@@ -21,9 +21,10 @@ import importlib as il
 import math 
 import BasicMath as bm
 import logging as lgn			#Logging for custom exceptions
+from enum import Enum			#Enum for elimination of magic numbers
 
 #Initiating logging
-LOGLEVEL = lgn.INFO
+LOGLEVEL = lgn.DEBUG
 lgn.basicConfig(format="%(levelname)s: %(message)s", level=lgn.DEBUG)
 lgn.getLogger().setLevel(LOGLEVEL)
 
@@ -35,6 +36,54 @@ exeff = BaseCPUInfo.executable_files_folder
 
 class CustomException(Exception):
 	pass
+
+class IfNames(Enum):
+	If = "if"
+
+class StandardFunctions(Enum):
+	rom = "rom"
+	ram = "ram"
+	register = "reg"
+	stack = "stack"
+	interrupt = "interrupt"
+	general_io = "io"
+	call_subroutine = "call"
+
+class ALUFunctions(Enum):
+	alu_function = "compute"
+
+class AbstractFunctions(Enum):
+	mark = "mark"
+	_else = "else"
+	_elif = "elif"
+	_pass = "pass"
+
+class FunctionNames(Enum):
+	If = IfNames
+	Standard = StandardFunctions
+	ALU = ALUFunctions
+	Abstract = AbstractFunctions
+
+class VariableTypes(Enum):
+	integer = "int"
+	float = "float"
+	character = "char"
+	string = "string"
+	boolean = "bool"
+	array = "array"
+	list = "list"
+
+alu_types = [
+
+	"int",
+	"float",
+	"char",
+	"string",
+	"bool",
+	"array",
+	"list",
+
+]
 
 function_names = [
 	[	"if" ],
@@ -365,7 +414,6 @@ def Assemble( filename: str, dest_name: str ):
 	ln_n = 0		#Line number
 	bin_ln = 0		#Binary line number
 	il = 0			#If length
-	ignore_ln = []	#Lines to ignore
 	marks, if_marks, funcs, funcs_names = FindMarks( lines )
 	eofln = 0		#End Of File Line
 	
@@ -374,12 +422,12 @@ def Assemble( filename: str, dest_name: str ):
 	
 	ReorderDict = {											#Dict for reordering variables
 	
-		0: {
+		0: {	#If statements
 		
 				0: [0,1,2,3,4,5,6,7],				#Weird problems with more than expected regs copied, hacked to ignore them
 		
 			},
-		1: {
+		1: {	#Standard functions
 		
 				0: [4,3,0,1,2,5,6,7],
 				1: [1,0,2,3,4,5,6,7],
@@ -389,7 +437,7 @@ def Assemble( filename: str, dest_name: str ):
 				5: [0,1,2,3,4,5,6,7],
 		
 			},
-		2: {
+		2: {	#ALU functions
 		
 				0: [2,3,0,4,5,6,7,1],
 		
@@ -401,29 +449,34 @@ def Assemble( filename: str, dest_name: str ):
 	_StaticBinVarLength_ = [ 4, 2, 2, 5, 2, 5, 2, 5 ]
 	_StaticBinVarIndex_ = [ 5, 9, 11, 13, 18, 20, 25, 27 ]
 	
-	#Main loop for assembling
+	#Get eof line
 	for i in lines:
 		if eof in i:
 			break 
 		eofln += 1
-		lgn.debug( "EOL: " + str( eofln ) )
-		lgn.debug( "IF_MARKS: " )
-		lgn.debug( if_marks )
-	eofbln = getBinLine( lines, eofln, marks )
+	
+	lgn.debug( "EOL: " + str( eofln ) )
+	lgn.debug( "IF_MARKS: " )
+	lgn.debug( if_marks )
+
+	#Main loop for assembling
 	while ln_n < len( lines ):
 		lgn.debug("ln_n: %s" % (str(ln_n)))
 		line = lines[ln_n].split()
 		func_var = line.pop( 0 )
+
 		try:
 			sline = lines[ln_n+1].split()
 			sfunc_var = sline.pop( 0 )
 		except IndexError:
 			sfunc_var = None
+		
 		full_binary_function = [0 for i in range( bw )]
 		nextLines = [None,None,None]
 		vars = ["" for i in range(10)]
 		t = lines[ln_n]
 		tt = GetVariableType( t )
+
 		if tt == "bin":
 			lines[ln_n] = str( bm.btd([int(i) for i in t[2:]]) )
 		elif tt == "hex":
@@ -466,10 +519,12 @@ def Assemble( filename: str, dest_name: str ):
 				except:
 					pass
 				iint += 1
+		
 		bin_rel_ln = 0
+		
 		if func_var == eof:
 			full_binary_function = bm.dtb( -1 )
-		elif func_var == function_names[0][0]:
+		elif func_var == FunctionNames.If.value.If.value:
 			if vars[0] == jump_name:	#JUMP
 				full_binary_function[5] = 1
 				try:
@@ -577,7 +632,7 @@ def Assemble( filename: str, dest_name: str ):
 			full_binary_function[9:11] = [1,0]
 			bin_rel_ln = getBinLine( lines, marks[func_var], marks )
 			nextLines[0] = bm.dtb( bin_rel_ln )
-		elif func_var == function_names[1][0]:
+		elif func_var == FunctionNames.Standard.value.rom.value:
 			full_binary_function[0:4] = [0,0,0,0]
 			full_binary_function[12:13] = bm.dtb(regs.index(vars[0]), 2)
 			full_binary_function[13:19] = bm.dtb(int(vars[1]), 5)
@@ -588,7 +643,7 @@ def Assemble( filename: str, dest_name: str ):
 					nextLines[0] = bm.dtb(int(vars[2]))
 			except Exception:
 				nextLines[0] = bm.dtb(int(vars[2]))
-		elif func_var == function_names[1][1]:
+		elif func_var == FunctionNames.Standard.value.ram.value:
 			full_binary_function[0:4] = [1,0,0,0]
 			if vars[0] == "to":
 				full_binary_function[9:11] = [0,1]
@@ -597,7 +652,7 @@ def Assemble( filename: str, dest_name: str ):
 			full_binary_function[12:13] = bm.dtb(regs.index(vars[2]), 2)
 			full_binary_function[13:19] = bm.dtb(int(vars[3]), 5)
 			nextLines[0] = bm.dtb(int(vars[1]))
-		elif func_var == function_names[1][5]:
+		elif func_var == FunctionNames.Standard.value.general_io.value:
 			full_binary_function[0:4] = [0,1,1,0]
 			if vars[0] == "from":
 				full_binary_function[5:9] = [0,0,0,0]
@@ -606,7 +661,7 @@ def Assemble( filename: str, dest_name: str ):
 			full_binary_function[12:13] = bm.dtb(regs.index(vars[2]), 2)
 			full_binary_function[13:19] = bm.dtb(int(vars[3]), 5)
 			nextLines[0] = bm.dtb(int(vars[1]))
-		elif func_var == function_names[3][1]:
+		elif func_var == FunctionNames.Abstract.value._else.value:
 			full_binary_function[5] = 1
 			nextLines[0] = None
 			t = if_marks[ str( il - 1 ) ]
@@ -616,7 +671,7 @@ def Assemble( filename: str, dest_name: str ):
 					break
 			if nextLines[0] == None:
 				raise CustomException("Error: ln %s: if statement was not encoded right, 0" % (ln_n + 1))
-		elif func_var == function_names[3][2]:
+		elif func_var == FunctionNames.Abstract.value._elif.value:
 			full_binary_function = [0 for i in range( bw )]
 			t_bin_vars[0] = bm.dtb( GetParameterIndex( [0,0,0],vars[0] ) + 1 )
 			nextLines[0] = None
@@ -674,6 +729,7 @@ def Assemble( filename: str, dest_name: str ):
 				bvl = _StaticBinVarLength_.copy()
 				bvi = _StaticBinVarIndex_.copy()
 				
+				#Get type of variables
 				MainType = None
 				for i, _ in enumerate(function_names):
 					if func_var in function_names[i]:
@@ -682,6 +738,7 @@ def Assemble( filename: str, dest_name: str ):
 				if MainType == None:
 					raise NameError
 				
+				#Get variable order
 				bvl, bvi = GetVariableOrder(
 					MainType, 
 					function_names[MainType].index(func_var),
@@ -690,27 +747,32 @@ def Assemble( filename: str, dest_name: str ):
 					ReorderDict
 				)
 				
+				#Initiate binary versions of variables
 				bin_vars = []
 				for j, e in enumerate( zip(bvl,bvi) ):
 					bin_vars.append( [0 for k in range( bvl[j] )] )
-				if func_var == function_names[2][0]:
+				
+				if func_var == FunctionNames.ALU.value.alu_function.value:
 					is_alu = 1
 					try:
 						bin_func = bm.dtb( GetParameterIndex( [2,0,2], vars[2] ), 4 )
 					except ValueError:
 						lgn.critical("Compute: ln %s: Error, invalid variables." % (ln_n + 1))
 						return -1
+					
 					if vars[0] == function_params[2][0][2][8]:
 						bin_vars[0] = bm.dtb( 1, bvl[0] )
-					# try:
+					
+					#Convert variables to binary versions
 					for i, _ in enumerate(bin_vars):
 						if i == 7:
-							try:
-								if vars[7] == "float":
-									bin_vars[7] = [1,0]
-									break
-							except Exception:
+							# try:
+							if vars[7] in alu_types:
+								lgn.debug("Type: %s" % (alu_types.index(vars[7])))
+								bin_vars[2] = bm.dtb(alu_types.index(vars[7]), 4)
 								break
+							# except Exception:
+							# 	break
 						elif GetParameterIndex( [2,0,i], vars[i] ) == "pass":
 							break
 						else:
@@ -739,7 +801,9 @@ def Assemble( filename: str, dest_name: str ):
 				for i, _ in enumerate(bin_func):
 					full_binary_function[i] = bin_func[i]
 				for i, e in enumerate(bin_vars):
+					lgn.debug("Bin vars i: %s" % (i))
 					for j, _ in enumerate( e ):
+						lgn.debug("Bin vars: j=%s" % (j))
 						full_binary_function[bvi[i] + j] = e[j]
 				
 				if func_var == function_names[2][0]:

@@ -140,32 +140,42 @@ class ALUIntFunction(Enum):
 	lor = 5
 	lxor = 6
 	lnot = 7
+	comp = 15
 
 class ALUFloatFunction(Enum):
 	add = 0
 	sub = 1
 	mul = 2
 	div = 3
+	comp = 15
 
 class ALUCharFunction(Enum):
 	read = 0
 	write = 1
+	comp = 15
 
 class ALUStringFunction(Enum):
 	char_append = 0
 	string_append = 1
 	char_read = 2
 	char_write = 3
+	comp = 15
 
 class ALUBoolFunction(Enum):
 	read = 0
 	write = 1
+	comp = 15
 
 class ALUArrayFunction(Enum):
 	declare_size = 0
 	declare_item_length = 1
 	read_element = 2
 	write_element = 3
+
+class ExecuteReturnStates(Enum):
+	NoError = 0
+	ALUError = 1
+	UnknownError = 2
 
 class SingleInstructionReturnStates(Enum):
 	NoErrorContinue = 0
@@ -183,14 +193,32 @@ class RuntimeVariables(Enum):
 	REGISTERC = 6
 
 class EmulatorRuntimeError(Enum):
-	ALUFAILED = "ALU: Unknown error."
-	ALUNOTINITIATED = "ALU: Couldn't initiate."
-	ILLEGALFUNCTION = "Offset: Illegal function called."
+	ALUFAILED = "ALU: Unknown error"
+	ALUNOTINITIATED = "ALU: Couldn't initiate"
+	ILLEGALFUNCTION = "Offset: Illegal function called"
 
 class SuspendCentralUnitStates(Enum):
 	not_applicable = -1
 	alu_array_execution = 0
 	alu_list_execution = 1
+
+class binary_input_indecies(Enum):
+	MainFunction = 0
+	IsALU = 4
+	VariableA = 5
+	VariableB = 9
+	RegisterA = 11
+	RegisterB = 18
+	RegisterC = 25
+
+class binary_input_lengths(Enum):
+	MainFunction = 4
+	IsALU = 1
+	VariableA = 4
+	VariableB = 2
+	RegisterA = 7
+	RegisterB = 7
+	RegisterC = 7
 
 suspend_central_unit_processing = False
 suspend_central_unit_state = SuspendCentralUnitStates.not_applicable.value
@@ -294,6 +322,8 @@ def alu(instruction_variables=None):		#//Update for new ALU
 	func = bm.btd(reg(ReadWrite.READ, ALUConfig.ALUFUNCTION, RegType.ALU)[0:4])
 	type = bm.btd(instruction_variables[RuntimeVariables.VARIABLEA.value])
 	
+	lgn.debug("ALU: Type: %s, function: %s" % (bm.btd(type), bm.btd(func)))
+
 	#Get input B or 1 for increment or decrement
 	if ena_list[ALUConfig.PROGRAMCOUNTERINCREMENT.value] or ena_list[ALUConfig.INCREMENT.value] or ena_list[ALUConfig.DECREMENT.value]:
 		num_b = bm.dtb(1)
@@ -334,8 +364,10 @@ def alu(instruction_variables=None):		#//Update for new ALU
 			q = bm.dtb(g.x(num_a, num_b))
 		elif func == ALUIntFunction.lnot.value:
 			q = bm.dtb(g.n(num_a))
+		elif func == ALUIntFunction.comp.value:
+			q = num_a
 		else:
-			lgn.CRITICAL("Error: invalid int function at line %s" % (ln))
+			lgn.critical("Error: Invalid int function.")
 			return ALUReturnStates.InvalidFunction
 	elif type == ALUType.float.value:
 		if func == ALUFloatFunction.add.value:
@@ -346,15 +378,19 @@ def alu(instruction_variables=None):		#//Update for new ALU
 			q = bm.user_dtb(bm.user_btd(num_a) * bm.user_btd(num_b))
 		elif func == ALUFloatFunction.div.value:
 			q = bm.user_dtb(bm.user_btd(num_a) / bm.user_btd(num_b))
+		elif func == ALUFloatFunction.comp.value:
+			q = num_a
 		else:
 			lgn.CRITICAL("Error: invalid float function at line %s" % (bm.btd(ln)))
 			return ALUReturnStates.InvalidFunction
 	elif type == ALUType.char.value:
-		if function == ALUCharFunction.read.value:
+		if func == ALUCharFunction.read.value:
 			q = bm.char_read(num_a, num_b)
-		elif function == ALUCharFunction.write.value:
+		elif func == ALUCharFunction.write.value:
 			index = instruction_variables[RuntimeVariables.VARIABLEA.value] + instruction_variables[RuntimeVariables.VARIABLEB.value]
 			q = bm.char_Write(num_a, num_b, index)
+		elif func == ALUCharFunction.comp.value:
+			q = num_a
 		else:
 			lgn.CRITICAL("Error: invalid char function at line %s" % (bm.btd(ln)))
 			return ALUReturnStates.InvalidFunction
@@ -368,6 +404,8 @@ def alu(instruction_variables=None):		#//Update for new ALU
 		elif func == ALUStringFunction.char_write.value:
 			index = instruction_variables[RuntimeVariables.VARIABLEA.value] + instruction_variables[RuntimeVariables.VARIABLEB.value]
 			q = bm.string_char_write(num_a, num_b, index)
+		elif func == ALUStringFunction.comp.value:
+			q = num_a
 		else:
 			lgn.CRITICAL("Error: invalid string function at line %s" % (bm.btd(ln)))
 			return ALUReturnStates.InvalidFunction
@@ -376,6 +414,8 @@ def alu(instruction_variables=None):		#//Update for new ALU
 			q = bm.bool_read(num_a, num_b)
 		elif func == ALUBoolFunction.write.value:
 			q = bm.bool_write(num_a, num_b, instruction_variables[RuntimeVariables.VARIABLEA][0])
+		elif func == ALUBoolFunction.comp.value:
+			q = num_a
 		else:
 			lgn.CRITICAL("Error: invalid bool function at line %s" % (bm.btd(ln)))
 			return ALUReturnStates.InvalidFunction
@@ -392,7 +432,7 @@ def alu(instruction_variables=None):		#//Update for new ALU
 		lgn.critical("Error: List not implemented yet.")
 		return ALUReturnStates.InvalidFunction
 	else:
-		lgn.CRITICAL("Error: invalid ALU type at line %s" % (ln))
+		lgn.CRITICAL("Error: invalid ALU type at line %s: %s" % (ln, func))
 		return ALUReturnStates.InvalidType
 
 	#Manage output
@@ -901,9 +941,9 @@ def execute(set_list, ena_list, gui=False,
 			reg(ReadWrite.WRITE, ProtReg.PROGRAMCOUNTER, RegType.PROTECTED, var)
 	if set_list[4]:		#aor
 		alu_r = alu()
-		if alu_r == ALUReturnStates.UndefinedError or alu_r == ALUReturnStates.InvalidFunction or alu_r == ALUReturnStates.InvalidType:
-			lgn.warning("%s" % (str(EmulatorRuntimeError.ALUFAILED.value)))
-			raise Exception
+		if alu_r != ALUReturnStates.NoError:
+			lgn.critical("%s, %s." % (str(EmulatorRuntimeError.ALUFAILED.value), str(alu_r)))
+			return ExecuteReturnStates.ALUError
 	if set_list[5]:		#rama
 		reg(ReadWrite.WRITE, ProtReg.RAMADDRESS, RegType.PROTECTED, var)
 	if set_list[6]:		#ramd
@@ -936,6 +976,8 @@ def execute(set_list, ena_list, gui=False,
 		reg(ReadWrite.WRITE, ProtReg.STACKPOINTER, RegType.PROTECTED, var)
 	if set_list[0]:		#PC Increment
 		pci()
+	
+	return ExecuteReturnStates.NoError
 
 #Run Single Instruction
 def single_instruction(reset=0, gui=False, 
@@ -990,8 +1032,25 @@ def single_instruction(reset=0, gui=False,
 	
 	#get input variables
 	#Where the different variables start in input space
-	var_ofs = [0,4,5,9,11,18,25]
-	var_lengs = [4,1,4,2,7,7,7]
+	var_ofs = [
+				binary_input_indecies.MainFunction.value,
+				binary_input_indecies.IsALU.value,
+				binary_input_indecies.VariableA.value,
+				binary_input_indecies.VariableB.value,
+				binary_input_indecies.RegisterA.value,
+				binary_input_indecies.RegisterB.value,
+				binary_input_indecies.RegisterC.value,
+				]
+
+	var_lengs = [
+				binary_input_lengths.MainFunction.value,
+				binary_input_lengths.IsALU.value,
+				binary_input_lengths.VariableA.value,
+				binary_input_lengths.VariableB.value,
+				binary_input_lengths.RegisterA.value,
+				binary_input_lengths.RegisterB.value,
+				binary_input_lengths.RegisterC.value,
+			  ]
 	
 	#Unpack instruction to variables
 	instruction_vars = []
@@ -1033,9 +1092,13 @@ def single_instruction(reset=0, gui=False,
 		
 	for i, _ in enumerate(FunctionDefinitions[0][_ofs]):
 		lgn.debug("RUN: %s" % (i))
-		execute(FunctionDefinitions[0][_ofs][i], 
-				FunctionDefinitions[1][_ofs][i], 
-				gui, instruction_vars)
+		er = execute(FunctionDefinitions[0][_ofs][i], 
+					FunctionDefinitions[1][_ofs][i], 
+					gui, instruction_vars)
+		lgn.debug("Execute returnstate: %s" % (str(er)))
+		if er != ExecuteReturnStates.NoError:
+			lgn.warning("Execute not successful!")
+			return SingleInstructionReturnStates.UnknownError
 	
 	#Return 0 for indication of no errors encountered
 	return SingleInstructionReturnStates.NoErrorContinue
@@ -1079,17 +1142,16 @@ def run(filename, gui=False,
 	#Execute program 
 	while True:
 		q = single_instruction(0, gui, force_show_exceptions)
-		if isinstance(q, int):
-			if q == SingleInstructionReturnStates.NoErrorExit:		#EXIT_SIGNAL
-				if time_runtime:
-					end_time = time.time()
-					lgn.debug("elapsed time: %s" % (end_time-start_time))
-					return [1, end_time-start_time]
-				lgn.debug("Run: Program returned with exit code 1.")
-				return 1
-			elif q == SingleInstructionReturnStates.InvalidFunction:	#Error signal
-				lgn.critical("Error: %s.run(): return code InvalidFunction, runtime stopped" % (__file__))
-				raise Exception
-			elif q == SingleInstructionReturnStates.UnknownError:	#Unknown error
-				lgn.warning(q)
-				print(q)
+		if q == SingleInstructionReturnStates.NoErrorExit:		#EXIT_SIGNAL
+			if time_runtime:
+				end_time = time.time()
+				lgn.debug("elapsed time: %s" % (end_time-start_time))
+				return [1, end_time-start_time]
+			lgn.debug("Run: Program returned with exit code 1.")
+			return 1
+		elif q == SingleInstructionReturnStates.InvalidFunction:	#Error signal
+			lgn.critical("Error: %s.run(): return code InvalidFunction, runtime stopped" % (__file__))
+			raise Exception
+		elif q == SingleInstructionReturnStates.UnknownError:	#Unknown error
+			lgn.critical(q)
+			raise Exception
