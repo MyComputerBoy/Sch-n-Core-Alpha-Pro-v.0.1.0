@@ -3,13 +3,14 @@ io from 0 gpr 0
 io from 1 gpr 1
 io from 2 gpr 2
 rom gpr 3 111111 float
-compute gpr 0 compare gpr 3 gpr 3
+compute gpr 0 compare gpr 3 gpr 3 float
 if ==
 {
 stack pop gpr 0
 stack push gpr 0
 }
-compute gpr 2 compare gpr 3 gpr 3
+rom gpr 3 111111 float
+compute gpr 2 compare gpr 3 gpr 3 float
 if ==
 {
 stack pop gpr 2
@@ -18,41 +19,44 @@ stack push gpr 2
 stack push gpr 0
 stack push gpr 2
 rom gpr 3 0 float
-compute gpr 1 compare gpr 3 gpr 3
+compute gpr 1 compare gpr 3 gpr 3 float
 if ==
 {
 add 
 }
 rom gpr 3 1 float
-compute gpr 1 compare gpr 3 gpr 3
+compute gpr 1 compare gpr 3 gpr 3 float
 if ==
 {
 sub
 }
 rom gpr 3 2 float
-compute gpr 1 compare gpr 3 gpr 3
+compute gpr 1 compare gpr 3 gpr 3 float
 if ==
 {
 mul 
 }
 rom gpr 3 3 float
-compute gpr 1 compare gpr 3 gpr 3
+compute gpr 1 compare gpr 3 gpr 3 float
 if ==
 {
 div 
 }
 rom gpr 3 4 float
-compute gpr 1 compare gpr 3 gpr 3
+compute gpr 1 compare gpr 3 gpr 3 float
 if ==
 {
 sqrt
 }
 rom gpr 3 5 float
-compute gpr 1 compare gpr 3 gpr 3
+compute gpr 1 compare gpr 3 gpr 3 float
 if ==
 {
 eof_mark
 }
+rom gpr 0 123456789 float
+io to 0 gpr 0
+eof_mark
 mark loop_end
 stack pop gpr 0
 stack push gpr 0
@@ -100,7 +104,7 @@ stack pop gpr 1
 stack push gpr 1
 stack push gpr 2
 stack push gpr 3
-compute gpr 1 compare gpr 3 gpr 3
+compute gpr 1 compare gpr 3 gpr 3 float
 if ==
 {
 stack pop gpr 3

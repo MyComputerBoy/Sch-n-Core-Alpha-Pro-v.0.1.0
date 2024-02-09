@@ -114,7 +114,7 @@ function_params = [
 		[	[None], [False], [None], ["pass"] ],													#call/return function
 	],
 	[	#Setup special device parameters (e.g. ALU)
-		[	[True], [None], ["add","sub","mul","div","and","or","xor","not","shift","","","","","","","compare"],[True],[None],[True],[None],[None, "float"], ["pass"] ],
+		[	[True], [None], ["add","sub","mul","div","and","or","xor","not","shift","","","","","","","compare"],[True],[None],[True],[None],["int", "float", "char", "string", "bool", "array", "list"], ["pass"] ],
 	],
 	[
 		[	[None] ],
@@ -487,14 +487,14 @@ def Assemble( filename: str, dest_name: str ):
 			if func_var not in var_excp[0] and func_var not in marks:
 				try:
 					vars[0] = line.pop( 0 )
-				except:
+				except IndexError:
 					print( "Error: ln " + str(ln_n + 1) + ", Variable one missing" )
 					return -1
 				vars[2] = ""
 				if func_var not in var_excp[1]:
 					try:
 						vars[1] = line.pop( 0 )
-					except:
+					except IndexError:
 						if func_var == function_names[0][0] and vars[0] == jump_name:
 							pass
 						else:
@@ -505,7 +505,7 @@ def Assemble( filename: str, dest_name: str ):
 					for i in range( 2, 8 ):
 						try:
 							vars[i] = line.pop( 0 )
-						except:
+						except IndexError:
 							break
 			iint = 0
 			for i in vars:
@@ -639,6 +639,8 @@ def Assemble( filename: str, dest_name: str ):
 			try:
 				if vars[3] == "float":
 					nextLines[0] = bm.user_dtb(float(vars[2]))
+				elif vars[3] == "char":
+					nextLines[0] = bm.user_ctb(vars[2][0])
 				else:
 					nextLines[0] = bm.dtb(int(vars[2]))
 			except Exception:
@@ -773,7 +775,7 @@ def Assemble( filename: str, dest_name: str ):
 								break
 							# except Exception:
 							# 	break
-						elif GetParameterIndex( [2,0,i], vars[i] ) == "pass":
+						if GetParameterIndex( [2,0,i], vars[i] ) == "pass":
 							break
 						else:
 							bin_vars[i] = bm.dtb( GetParameterIndex( [2,0,i], vars[i] ), bvl[i] )

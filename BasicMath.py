@@ -5,6 +5,13 @@ import BaseCPUInfo
 
 import math as m 
 import GateLevel as g 
+from enum import Enum			#Enum for elimination of magic numbers
+
+class FloatComparisonStates(Enum):
+	equals = 0
+	greater_than = 1
+	less_than = 2
+	invalid_comparison = 3
 
 bw = BaseCPUInfo.bit_width
 
@@ -38,7 +45,10 @@ def user_dtb(input):
 	
 	#Manage proper exponent and mantissa
 	
-	mantissa = int(int(2**21*input)/2**(128-exponent))
+	if input == 0:
+		mantissa = 0
+	else:
+		mantissa = int(int(2**21*input)/2**(128-exponent))
 	
 	#Append to q
 	q.append(sign)
@@ -74,6 +84,25 @@ def user_btd( input ):
 	if sign == 1:
 		return v
 	return -v
+
+def user_ctb(char):
+	return btd(string_index.index(char))
+
+def user_btc(list):
+	return string_index[btd(list)]
+
+def float_compare(num_a, num_b):
+	float_a = user_btd(num_a)
+	float_b = user_btd(num_b)
+
+	if float_a > float_b:
+		return FloatComparisonStates.greater_than
+	elif float_a == float_b:
+		return FloatComparisonStates.equals
+	elif float_a < float_b:
+		return FloatComparisonStates.less_than
+	else:
+		return FloatComparisonStates.invalid_comparison
 
 def char_read(num_a, num_b):
 	return num_a[btd(num_b):btd(num_b)+8]

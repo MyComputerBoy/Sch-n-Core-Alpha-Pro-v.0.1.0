@@ -121,6 +121,7 @@ class ALUReturnStates(Enum):
 	UndefinedError = 2
 	InvalidFunction = 3
 	InvalidType = 3
+	InvalidComparison = 4
 
 class ALUType(Enum):
 	int = 0
@@ -231,6 +232,9 @@ def buf(rw, list=bz):
 	
 	buffer = list
 
+def ZeroWord():
+	return [0 for i in range(bw)]
+
 def rom(rw, index):
 	global rom_data
 	if rw == 1:
@@ -320,9 +324,13 @@ def alu(instruction_variables=None):		#//Update for new ALU
 	set_list = reg(ReadWrite.READ, ProtReg.SETLIST, RegType.PROTECTED)
 	ln = reg(ReadWrite.READ, ProtReg.PROGRAMCOUNTER, RegType.PROTECTED)
 	func = bm.btd(reg(ReadWrite.READ, ALUConfig.ALUFUNCTION, RegType.ALU)[0:4])
-	type = bm.btd(instruction_variables[RuntimeVariables.VARIABLEA.value])
+	if instruction_variables[RuntimeVariables.LOGICALALU.value][0]:
+		lgn.debug("ALU: Compute function!")
+		type = bm.btd(instruction_variables[RuntimeVariables.VARIABLEA.value])
+	else:
+		type = 0
 	
-	lgn.debug("ALU: Type: %s, function: %s" % (bm.btd(type), bm.btd(func)))
+	lgn.debug("ALU: Type: %s, function: %s" % (type, func))
 
 	#Get input B or 1 for increment or decrement
 	if ena_list[ALUConfig.PROGRAMCOUNTERINCREMENT.value] or ena_list[ALUConfig.INCREMENT.value] or ena_list[ALUConfig.DECREMENT.value]:
@@ -331,26 +339,22 @@ def alu(instruction_variables=None):		#//Update for new ALU
 		num_b = reg(ReadWrite.READ, ALUConfig.BREGISTER, RegType.ALU)
 	
 	num_a = buf(0)
-	tmp_a = bm.btd(num_a)
-	tmp_b = bm.btd(num_b)
-	lgn.debug("ALU: ALU A Register: %s" % (bm.user_btd(num_a)))
+	lgn.debug("ALU: ALU A Register: %s | %s" % (bm.user_btd(num_a), bm.btd(num_a)))
 	
-	#Calculate comparison
-	if tmp_a > tmp_b:
-		comp = [1,0,0]
-	elif tmp_a == tmp_b:
-		comp = [0,1,0]
-	else:
-		comp = [0,0,1]
-	
+	comp = [0,0,0]
+
 	q = []
 	co = 0
 	
 	#Compute computation
 	if type == ALUType.int.value:
-		if func == ALUIntFunction.add.value:
+		if func == ALUIntFunction.add.value and ena_list[ALUConfig.DECREMENT.value] != 1:
+			lgn.debug("ALU: Integer addition!")
 			q = bm.dtb(bm.btd(num_a) + bm.btd(num_b))
-		elif func == ALUIntFunction.sub.value:
+			lgn.debug("Adding %s + %s = %s" % (bm.btd(num_a), bm.btd(num_b), bm.btd(q)))
+		elif func == ALUIntFunction.sub.value or ena_list[ALUConfig.DECREMENT.value]:
+			if ena_list[ALUConfig.DECREMENT.value]:
+				lgn.debug("ALU: Decrementing!")
 			q = bm.dtb(bm.btd(num_a) - bm.btd(num_b))
 		elif func == ALUIntFunction.mul.value:
 			q = bm.dtb(bm.btd(num_a) * bm.btd(num_b))
@@ -366,11 +370,20 @@ def alu(instruction_variables=None):		#//Update for new ALU
 			q = bm.dtb(g.n(num_a))
 		elif func == ALUIntFunction.comp.value:
 			q = num_a
+			decimal_a = bm.btd(num_a)
+			decimal_b = bm.btd(num_b)
+			if decimal_a > decimal_b:
+				comp = [1,0,0]
+			elif decimal_a == decimal_b:
+				comp = [0,1,0]
+			elif decimal_a < decimal_b:
+				comp = [0,0,1]
 		else:
 			lgn.critical("Error: Invalid int function.")
 			return ALUReturnStates.InvalidFunction
 	elif type == ALUType.float.value:
 		if func == ALUFloatFunction.add.value:
+			lgn.debug("ALU: Floating Point Addition!")
 			q = bm.user_dtb(bm.user_btd(num_a) + bm.user_btd(num_b))
 		elif func == ALUFloatFunction.sub.value:
 			q = bm.user_dtb(bm.user_btd(num_a) - bm.user_btd(num_b))
@@ -380,8 +393,19 @@ def alu(instruction_variables=None):		#//Update for new ALU
 			q = bm.user_dtb(bm.user_btd(num_a) / bm.user_btd(num_b))
 		elif func == ALUFloatFunction.comp.value:
 			q = num_a
+			comparison = bm.float_compare(num_a, num_b)
+			lgn.debug("ALU Float Comparison: %s ? %s: %s" % (bm.user_btd(num_a), bm.user_btd(num_b), comparison))
+			if comparison == bm.FloatComparisonStates.greater_than:
+				comp = [1,0,0]
+			elif comparison == bm.FloatComparisonStates.equals:
+				comp = [0,1,0]
+			elif comparison == bm.FloatComparisonStates.less_than:
+				comp = [0,0,1]
+			elif comparison == bm.FloatComparisonStates.invalid_comparison:
+				lgn.critical("Error: Invalid comparison")
+				return ALUReturnStates.InvalidComparison
 		else:
-			lgn.CRITICAL("Error: invalid float function at line %s" % (bm.btd(ln)))
+			lgn.CRITICAL("Error: Invalid float function at line %s" % (bm.btd(ln)))
 			return ALUReturnStates.InvalidFunction
 	elif type == ALUType.char.value:
 		if func == ALUCharFunction.read.value:
@@ -439,7 +463,7 @@ def alu(instruction_variables=None):		#//Update for new ALU
 	comp.append(co)
 	lgn.info("ALU: %s" % (comp))
 	reg(ReadWrite.WRITE, ProtReg.AOR, RegType.PROTECTED, q)
-	lgn.debug("AOR: %s" % (bm.user_btd(q)))
+	lgn.debug("AOR: %s, %s" % (bm.user_btd(q), bm.btd(q)))
 	if set_list[ALUConfig.SETFLAGS.value]:
 		reg(ReadWrite.WRITE, ProtReg.FLAGS, RegType.PROTECTED, comp)
 	
@@ -494,15 +518,15 @@ FunctionDefinitionMetaInfo = [
 #Clear Registers
 def cls(r=0, g=0, b=0):
 	if b == 1:
-		buf(1, bz)
+		buf(1, ZeroWord())
 	if r == 1:
 		ramv = [
-			bz for i in range(1024)
+			ZeroWord() for i in range(1024)
 		]
 	if g == 1:
 		for i, _ in enumerate(regs):
 			for j, _ in enumerate(regs[i]):
-				regs[i][j] = bz
+				regs[i][j] = ZeroWord()
 
 def pr(lst, gui=False):#Print function
 	if gui == True:
@@ -823,7 +847,7 @@ def sr(lst, comp, var_a=[0]):	#Should Run?
 #Update for new function definitions!
 def ofs(func, instruction_vars):	#Offset
 	
-	lgn.debug("OFS: Instruction Variables: %s" % (instruction_vars))
+	# lgn.debug("OFS: Instruction Variables: %s" % (instruction_vars))
 	if instruction_vars[RuntimeVariables.LOGICALALU.value][0] == 1:
 		return 1, 1
 	
@@ -889,19 +913,19 @@ def execute(set_list, ena_list, gui=False,
 		var = reg(ReadWrite.READ, ProtReg.PROGRAMCOUNTER, RegType.PROTECTED)
 	if ena_list[2]:		#aor 
 		var = reg(ReadWrite.READ, ProtReg.AOR, RegType.PROTECTED)
-	if ena_list[3]:		#Increment
-		alu(variables)
-	if ena_list[4]:		#Decrement
-		alu()
+	# if ena_list[3]:		#Increment
+	# 	alu(variables)
+	# if ena_list[4]:		#Decrement
+	# 	alu()
 	if ena_list[5]:		#ramd 
 		tmp = reg(ReadWrite.READ, ProtReg.RAMADDRESS, RegType.PROTECTED)
 		var = ram(ReadWrite.READ, bm.btd(tmp), "RAMD ENABLE EXECUTE()")
-		lgn.debug("RAMD: %s READS %s" % (bm.btd(tmp), bm.blts(var)))
+		lgn.debug("RAMD: %s READS %s | %s" % (bm.btd(tmp), bm.btd(var), bm.user_btd(var)))
 	if ena_list[6]:		#romd 
 		tmp = reg(ReadWrite.READ, ProtReg.ROMADDRESS, RegType.PROTECTED)
 		try:
 			var = rom(0, bm.btd(tmp))
-			lgn.debug("Execute: ROM: %s" % (bm.blts(var)))
+			lgn.debug("Execute: Read ROM: %s | %s" % (bm.blts(var), bm.user_btd(var)))
 		except IndexError:
 			temp = reg(ReadWrite.READ, ProtReg.ROMADDRESS, RegType.PROTECTED)
 			lgn.critical("ROM: Error: Invalid program counter: %s" % (bm.btd(temp)))
@@ -911,15 +935,16 @@ def execute(set_list, ena_list, gui=False,
 	if ena_list[8]:		#gpi 
 		var = bm.user_dtb(float(input("Number: ")))
 	if ena_list[9]:		#rega 
-		lgn.debug("Execute: REGA: %s:%s" % (reg_a[0], reg_a[1]))
 		var = reg(ReadWrite.READ, reg_a[0], reg_a[1])
+		lgn.debug("Execute: Read REGA: %s:%s = %s | %s" % (reg_a[0], reg_a[1], bm.btd(var), bm.user_btd(var)))
 	if ena_list[10]:	#regb 
-		lgn.debug("Execute: REGB: %s:%s" % (reg_b[0], reg_b[1]))
+		lgn.debug("Execute: Read REGB: %s:%s" % (reg_b[0], reg_b[1]))
 		var = reg(ReadWrite.READ, reg_b[0], reg_b[1])
 	if ena_list[11]:	#regc
 		var = reg(ReadWrite.READ, reg_c[0], reg_c[1])
 	if ena_list[12]:	#stack pointer
 		var = reg(ReadWrite.READ, ProtReg.STACKPOINTER, RegType.PROTECTED)
+		lgn.debug("Using Stack Pointer: %s" % (bm.btd(var)))
 	
 	buf(1,var)
 	
@@ -940,15 +965,17 @@ def execute(set_list, ena_list, gui=False,
 			lgn.info("Conditional Branch: BRANCHED.")
 			reg(ReadWrite.WRITE, ProtReg.PROGRAMCOUNTER, RegType.PROTECTED, var)
 	if set_list[4]:		#aor
-		alu_r = alu()
+		lgn.debug("ALU: Instruction Variables: %s" % (variables))
+		alu_r = alu(variables)
 		if alu_r != ALUReturnStates.NoError:
 			lgn.critical("%s, %s." % (str(EmulatorRuntimeError.ALUFAILED.value), str(alu_r)))
 			return ExecuteReturnStates.ALUError
 	if set_list[5]:		#rama
+		lgn.debug("RAM Address Write: %s" % (bm.btd(var)))
 		reg(ReadWrite.WRITE, ProtReg.RAMADDRESS, RegType.PROTECTED, var)
 	if set_list[6]:		#ramd
 		tmp = reg(ReadWrite.READ, ProtReg.RAMADDRESS, RegType.PROTECTED)
-		lgn.debug("RAMD: %s -> %s" % (bm.btd(tmp), bm.user_btd(var)))
+		lgn.debug("RAMD Write: %s -> %s | %s" % (bm.btd(tmp), bm.btd(var), bm.user_btd(var)))
 		ram(ReadWrite.WRITE, bm.btd(tmp), var)
 	if set_list[7]:		#roma
 		reg(ReadWrite.WRITE, ProtReg.ROMADDRESS, RegType.PROTECTED, var)
@@ -1002,8 +1029,7 @@ def single_instruction(reset=0, gui=False,
 	#Handle reset
 	if reset != 0:	#Reset
 		cls(1,1,1)
-		if force_show_exceptions:
-			lgn.debug("Cleared registers")
+		lgn.debug("Cleared registers")
 		return SingleInstructionReturnStates.NoErrorContinue
 	
 	#Get program counter, mainly for debugging
@@ -1016,6 +1042,8 @@ def single_instruction(reset=0, gui=False,
 		execute(FunctionDefinitions[0][0][i], FunctionDefinitions[1][0][i])
 	inp = reg(ReadWrite.READ, ProtReg.CONTROLUNITINPUT, RegType.PROTECTED)
 	
+	lgn.debug("SingleRun: Fetched instruction!")
+
 	#if input is all 1s, exit with return code 1
 	exit_signal = True
 	for i, e in enumerate(inp):
@@ -1030,6 +1058,8 @@ def single_instruction(reset=0, gui=False,
 			lgn.debug("EXIT_SIGNAL.")
 		return SingleInstructionReturnStates.NoErrorExit
 	
+	lgn.debug("SignleRun: No Exit Signal!")
+
 	#get input variables
 	#Where the different variables start in input space
 	var_ofs = [
@@ -1068,15 +1098,19 @@ def single_instruction(reset=0, gui=False,
 	if _ofs == EmulatorRuntimeError.ILLEGALFUNCTION:
 		return SingleInstructionReturnStates.InvalidFunction
 	
+	lgn.debug("SingleRun: Got Offset and Meta Function!")
+
 	#Make registers ready for execution
 	lgn.debug("SingleInstruction: MetaFunction: %s, ofs: %s" % (FunctionDefinitionMetaInfo[meta_func], _ofs))
 	if instruction_vars[RuntimeVariables.LOGICALALU.value][0] == 1:	#If it is an alu operation
-		lgn.info("SingleInstruction: ALU Function: %s" % (instruction_vars[RuntimeVariables.FUNCTIONVARIABLE.value]))
+		lgn.info("SingleInstruction: ALU Function: %s" % (bm.blts(instruction_vars[RuntimeVariables.FUNCTIONVARIABLE.value])))
 		reg(ReadWrite.WRITE, ALUConfig.ALUFUNCTION, RegType.ALU, instruction_vars[RuntimeVariables.FUNCTIONVARIABLE.value])
 		reg(ReadWrite.WRITE, ALUConfig.SPECIALFUNCTION, RegType.PROTECTED, instruction_vars[RuntimeVariables.VARIABLEB.value])
+		lgn.debug("SingleRun: Set ALU variables!")
 	else:															#If it is a function operation
 		reg(ReadWrite.WRITE, ALUConfig.ALUFUNCTION, RegType.ALU, bm.dtb(0, 4))
 		reg(ReadWrite.WRITE, ALUConfig.SPECIALFUNCTION, RegType.PROTECTED, bm.dtb(2))
+		lgn.debug("SingleRun: Set Function variables!")
 	
 	#Execute operation
 	if suspend_central_unit_processing:
@@ -1089,13 +1123,15 @@ def single_instruction(reset=0, gui=False,
 			)
 			suspend_central_unit_state = SuspendCentralUnitStates.not_applicable.value
 			return SingleInstructionReturnStates.NoErrorContinue
-		
+	
+	lgn.debug("SingleRun: No Suspended Execution!")
+
 	for i, _ in enumerate(FunctionDefinitions[0][_ofs]):
 		lgn.debug("RUN: %s" % (i))
 		er = execute(FunctionDefinitions[0][_ofs][i], 
 					FunctionDefinitions[1][_ofs][i], 
 					gui, instruction_vars)
-		lgn.debug("Execute returnstate: %s" % (str(er)))
+
 		if er != ExecuteReturnStates.NoError:
 			lgn.warning("Execute not successful!")
 			return SingleInstructionReturnStates.UnknownError
@@ -1103,7 +1139,7 @@ def single_instruction(reset=0, gui=False,
 	#Return 0 for indication of no errors encountered
 	return SingleInstructionReturnStates.NoErrorContinue
 
-def run(filename, gui=False, 
+def run(filename, gui=True, 
 		force_show_exceptions=False,time_runtime=False,
 		DumpROM=True):
 	"""run(filename, gui=False, print_line_nr=False, force_show_exceptions=False,time_runtime=False) -> Runs executable program from filename
