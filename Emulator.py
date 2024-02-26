@@ -262,11 +262,15 @@ def ram(rw, index, value=None):
 		rw = rw.value
 	
 	if rw == 0:
-		return ramv[index]
+		try:
+			return ramv[index]
+		except IndexError:
+			lgn.critical("Error: RAM address invalid %s" % (index))
+			raise IndexError
 	try:
 		ramv[index] = value
 	except IndexError:
-		lgn.critical("Error: RAM address invalid")
+		lgn.critical("Error: RAM address invalid %s" % (index))
 		raise IndexError
 	return
 
@@ -598,6 +602,12 @@ FunctionDefinitions = [
 			[0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,1,0,0],
 			[0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0],
 		],
+		[	#STACK POINT TO AT REGISTER
+			[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0],
+		],
+		[	#STACK GET POINTER							
+			[0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0],
+		],
 		[	#STACK PUSH DOWN
 			[0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0],
 			[0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0],
@@ -608,10 +618,10 @@ FunctionDefinitions = [
 			[0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,1,0,0],
 			[0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0],
 		],
-		[	#STACK POINT TO AT REGISTER
+		[	#STACK POINT TO AT REGISTER (Required for weird variables usage)15
 			[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0],
 		],
-		[	#STACK GET POINTER							15
+		[	#STACK GET POINTER							
 			[0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0],
 		],
 		[	#CONDITIONAL--------------------------------
@@ -621,7 +631,7 @@ FunctionDefinitions = [
 		[	#INTERRUPT                           
 			[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
 		],
-		[	#CALL FUNCTION------------------------------
+		[	#CALL FUNCTION------------------------------20
 			[0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0],	#Push to stack
 			[0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0],	#
 			[0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0],	#
@@ -636,7 +646,7 @@ FunctionDefinitions = [
 			[0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0],	#Push to stack
 			[0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0],	#RegA
 		],
-		[	#GPIO At Immediate Register Read------------20
+		[	#GPIO At Immediate Register Read------------
 			[1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0],	#
 			[0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0],	#
 			[0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0],	#
@@ -651,7 +661,7 @@ FunctionDefinitions = [
 			[0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0],	#
 			[0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0],	#
 		],
-		[	#GPIO At Address At Immediate Register Write
+		[	#GPIO At Address At Immediate Register Write25
 			[1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0],	#
 			[0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0],	#
 			[0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0],	#
@@ -714,17 +724,23 @@ FunctionDefinitions = [
 			[0,0,1,0,0,0,0,0,0,0,0,0,0,0,0],
 			[0,0,0,0,0,1,0,0,0,0,0,0,0,0,0],
 		],
+		[	#STACK POINT TO AT REGISTER
+			[0,0,0,0,0,0,0,0,0,1,0,0,0,0,0],
+		],
+		[	#STACK GET POINTER
+			[0,0,0,0,0,0,0,0,0,0,0,0,1,0,0],
+		],
 		[	#STACK PUSH DOWN
 			[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0],
 			[0,0,0,0,0,0,0,0,0,1,0,0,0,0,0],
 			[0,0,1,0,0,0,0,0,0,0,0,0,0,0,0],
 		],
 		[	#STACK POP DOWN
-			[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0],
+			[0,0,0,1,0,0,0,0,0,0,0,0,1,0,0],
 			[0,0,1,0,0,0,0,0,0,0,0,0,0,0,0],
 			[0,0,0,0,0,1,0,0,0,0,0,0,0,0,0],
 		],
-		[	#STACK POINT TO AT REGISTER
+		[	#STACK POINT TO AT REGISTER(Required for weird variables usage)
 			[0,0,0,0,0,0,0,0,0,1,0,0,0,0,0],
 		],
 		[	#STACK GET POINTER
@@ -874,7 +890,7 @@ def ofs(func, instruction_vars):	#Offset
 	
 	#ftch, alu, rom, ram, reg, stck, conbrnch, intrpt, callretrn
 	#-----------------------------------------------------------------
-	ofs_array		= [2,4,8,10,16,18,20]
+	ofs_array		= [2,4,8,10,18,20,22]
 	ofs_use_var_a	= [0,1,0,1,0,0,0,1]
 	ofs_use_var_b	= [1,0,1,1,0,0,1,0]
 	

@@ -1,5 +1,5 @@
 rom gpr 0 123 float
-stack push gpr 0
+stack push gpr 0 up
 mark loop_start
 ram from 0 gpr 0
 rom gpr 1 10 float
@@ -7,15 +7,27 @@ compute gpr 0 intdiv gpr 1 gpr 2 float
 ram to 0 gpr 2
 compute gpr 2 mul gpr 1 gpr 3 float
 compute gpr 0 sub gpr 3 gpr 4 float
-stack push gpr 4
-rom gpr 5 1 float
+stack push gpr 4 up
+rom gpr 5 0 float
 compute gpr 2 compare gpr 5 gpr 5 float
-if <
+if <=
 {
-rom gpr 0 4294967295
-stack push gpr 0
+rom gpr 0 1111 float
+io to 0 gpr 0
 loop_exit
 }
 loop_start
 mark loop_exit
+mark out_loop
+stack pop gpr 0 down
+io to 0 gpr 0
+rom gpr 0 1 int
+stack get gpr 1 up
+compute gpr 0 compare gpr 1 gpr 1 int
+if ==
+{
+out_loop_exit
+}
+out_loop
+mark out_loop_exit
 eof
