@@ -301,9 +301,14 @@ def reg(rw, index, reg_type, value=None):
 	if rw == 0:
 		# lgn.debug("Reg: READ: %s:%s, %s" % (reg_type, index, bm.blts(regs[reg_type][index])))
 		return regs[reg_type][index]
+	# if isinstance(value, float):
+	# 	value = bm.user_dtb(value)
 	if not isinstance(value[0], int):
-		lgn.critical("Register: Invalid type of register assignement.")
-		raise Exception
+		try:
+			value = bm.btd(value)
+		except Exception:
+			lgn.critical("Register: Invalid type of register assignement. (%s)" % (value))
+			raise Exception
 	# lgn.debug("Reg: WRITE: %s:%s, %s" % (reg_type, index, bm.blts(value)))
 	regs[reg_type][index] = value
 
@@ -365,6 +370,7 @@ def alu(instruction_variables=None):		#//Update for new ALU
 			q = bm.dtb(bm.btd(num_a) * bm.btd(num_b))
 		elif func == ALUIntFunction.div.value:
 			q = bm.dtb(bm.btd(num_a) / bm.btd(num_b))
+			lgn.debug("ALU: int div, q: %s" % (q))
 		elif func == ALUIntFunction.land.value:
 			q = bm.dtb(g.a(num_a, num_b))
 		elif func == ALUIntFunction.lor.value:
@@ -543,9 +549,9 @@ def pr(lst, gui=False):#Print function
 		print(bm.btbs(lst))
 	else:
 		if advanced_show:
-			print("Output: %s | %s" % (str(bm.user_btd(lst)), str(bm.btd(lst))))
+			print("Output: %s | %s" % (str(bm.user_btd(lst)), str(bm.user_btc(lst))))
 		else:
-			print("Output: %s" % (bm.user_btd(lst)))
+			print("Output: %s" % (bm.user_btc(lst)))
 
 #Defining the functions pin outputs
 FunctionDefinitions = [
@@ -1033,6 +1039,7 @@ def execute(set_list, ena_list, gui=False,
 	if set_list[13]:	#regb
 		reg(ReadWrite.WRITE, reg_b[0], reg_b[1], var)
 	if set_list[14]:	#regc
+		lgn.debug("Execute: set reg_c: %s" % (var))
 		reg(ReadWrite.WRITE, reg_c[0], reg_c[1], var)
 	if set_list[15]:	#cui
 		reg(ReadWrite.WRITE, ProtReg.CONTROLUNITINPUT, RegType.PROTECTED, var)

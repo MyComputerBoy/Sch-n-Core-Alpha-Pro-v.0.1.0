@@ -105,7 +105,7 @@ function_params = [
 		[	["jump", ">", "==", ">=", "<", "!=", "<=", "weird", "co", ">c", "==c", ">=c", "<c", "!=c", "<=c"], ["pass"] ],
 	],
 	[	#Setup general function parameters, True=types of regs, False=to/from, None=nan (copy user input in general), "pass"=stop checking for parameters
-		[	[True], [None], [None,"float"], ["pass"] ],											#rom
+		[	[True], [None], [None,"float"], ["pass"] ],							#rom
 		[	[False], [None], [True], [None], ["pass"] ],						#ram
 		[	[True], [None], ["swap", "clone"], [True], [None],["pass"] ],		#reg
 		[	["push","pop", "set", "get"],[True], [None], ["up", "down"] ],		#stack

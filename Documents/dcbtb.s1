@@ -1,0 +1,49 @@
+rom gpr 0 20 float
+rom gpr 1 1 int
+ram to 513 gpr 0
+ram to 514 gpr 1
+stack push gpr 0 up
+rom gpr 0 4294967295 int
+stack push gpr 0 up
+mark dtbloop_start
+ram from 513 gpr 0
+rom gpr 1 2 float
+compute gpr 0 intdiv gpr 1 gpr 2 float
+ram to 513 gpr 2
+compute gpr 2 mul gpr 1 gpr 3 float
+compute gpr 0 sub gpr 3 gpr 4 float
+stack push gpr 4 up
+rom gpr 5 0 float
+compute gpr 2 compare gpr 5 gpr 5 float
+if <=
+{
+dtbloop_exit
+}
+ram from 514 gpr 0
+compute gpr 0 add gpr 0 gpr 0 int
+ram to 514 gpr 0
+dtbloop_start
+mark dtbloop_exit
+rom gpr 11 0 int
+ram from 514 gpr 12
+mark dtbout_loop
+stack pop gpr 0 down
+rom gpr 1 1 float
+compute gpr 0 compare gpr 1 gpr 1 float
+if ==
+{
+rom gpr 20 1111 float
+compute gpr 12 add gpr 11 gpr 11 int
+}
+rom gpr 13 2 int
+compute gpr 12 div gpr 13 gpr 12 int
+rom gpr 2 4294967295 int
+compute gpr 0 compare gpr 2 gpr 2 int
+if ==
+{
+dtbout_loop_exit
+}
+dtbout_loop
+mark dtbout_loop_exit
+io to 0 gpr 11
+eof

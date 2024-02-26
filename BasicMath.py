@@ -20,7 +20,7 @@ string_index = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!@
 def dtb( int, l=bw ):
 	q = []
 	for i in range( l ):
-		q.append( g.mod( int,2 ) )
+		q.append( m.floor(g.mod( int,2 ) ))
 		int = m.floor( int/2 )
 	return q
 

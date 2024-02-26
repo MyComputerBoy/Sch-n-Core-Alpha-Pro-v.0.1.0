@@ -1,11 +1,13 @@
-rom gpr 0 123 float
+rom gpr 0 3141 float
+ram to 512 gpr 0
 stack push gpr 0 up
-stack get gpr 10 up
-mark loop_start
-ram from 0 gpr 0
+rom gpr 0 4294967295 int
+stack push gpr 0
+mark ftbloop_start
+ram from 512 gpr 0
 rom gpr 1 10 float
 compute gpr 0 intdiv gpr 1 gpr 2 float
-ram to 0 gpr 2
+ram to 512 gpr 2
 compute gpr 2 mul gpr 1 gpr 3 float
 compute gpr 0 sub gpr 3 gpr 4 float
 stack push gpr 4 up
@@ -13,19 +15,20 @@ rom gpr 5 0 float
 compute gpr 2 compare gpr 5 gpr 5 float
 if <=
 {
-loop_exit
+ftbloop_exit
 }
-loop_start
-mark loop_exit
-mark out_loop
+ftbloop_start
+mark ftbloop_exit
+mark ftbout_loop
 stack pop gpr 0 down
-io to 0 gpr 0
 stack get gpr 1 up
-compute gpr 1 compare gpr 10 gpr 1 int
+rom gpr 2 4294967295 int
+compute gpr 0 compare gpr 2 gpr 2 int
 if ==
 {
-out_loop_exit
+ftbout_loop_exit
 }
-out_loop
-mark out_loop_exit
+io to 0 gpr 0
+ftbout_loop
+mark ftbout_loop_exit
 eof
