@@ -113,3 +113,7 @@ def udiv(al, bl):
 	a = bm.user_btd(al)
 	b = bm.user_btd(bl)
 	return bm.user_dtb(a/b)
+def uidiv(al, bl):
+	a = bm.user_btd(al)
+	b = bm.user_btd(bl)
+	return bm.user_dtb(m.floor(a/b))

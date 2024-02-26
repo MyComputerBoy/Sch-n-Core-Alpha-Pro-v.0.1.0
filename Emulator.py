@@ -148,6 +148,7 @@ class ALUFloatFunction(Enum):
 	sub = 1
 	mul = 2
 	div = 3
+	intdiv = 4
 	comp = 15
 
 class ALUCharFunction(Enum):
@@ -262,7 +263,11 @@ def ram(rw, index, value=None):
 	
 	if rw == 0:
 		return ramv[index]
-	ramv[index] = value
+	try:
+		ramv[index] = value
+	except IndexError:
+		lgn.critical("Error: RAM address invalid")
+		raise IndexError
 	return
 
 def reg(rw, index, reg_type, value=None):
@@ -349,12 +354,8 @@ def alu(instruction_variables=None):		#//Update for new ALU
 	#Compute computation
 	if type == ALUType.int.value:
 		if func == ALUIntFunction.add.value and ena_list[ALUConfig.DECREMENT.value] != 1:
-			lgn.debug("ALU: Integer addition!")
 			q = bm.dtb(bm.btd(num_a) + bm.btd(num_b))
-			lgn.debug("Adding %s + %s = %s" % (bm.btd(num_a), bm.btd(num_b), bm.btd(q)))
 		elif func == ALUIntFunction.sub.value or ena_list[ALUConfig.DECREMENT.value]:
-			if ena_list[ALUConfig.DECREMENT.value]:
-				lgn.debug("ALU: Decrementing!")
 			q = bm.dtb(bm.btd(num_a) - bm.btd(num_b))
 		elif func == ALUIntFunction.mul.value:
 			q = bm.dtb(bm.btd(num_a) * bm.btd(num_b))
@@ -383,7 +384,6 @@ def alu(instruction_variables=None):		#//Update for new ALU
 			return ALUReturnStates.InvalidFunction
 	elif type == ALUType.float.value:
 		if func == ALUFloatFunction.add.value:
-			lgn.debug("ALU: Floating Point Addition!")
 			q = bm.user_dtb(bm.user_btd(num_a) + bm.user_btd(num_b))
 		elif func == ALUFloatFunction.sub.value:
 			q = bm.user_dtb(bm.user_btd(num_a) - bm.user_btd(num_b))
@@ -391,10 +391,11 @@ def alu(instruction_variables=None):		#//Update for new ALU
 			q = bm.user_dtb(bm.user_btd(num_a) * bm.user_btd(num_b))
 		elif func == ALUFloatFunction.div.value:
 			q = bm.user_dtb(bm.user_btd(num_a) / bm.user_btd(num_b))
+		elif func == ALUFloatFunction.intdiv.value:
+			q = bm.user_dtb(math.floor(bm.user_btd(num_a) / bm.user_btd(num_b)))
 		elif func == ALUFloatFunction.comp.value:
 			q = num_a
 			comparison = bm.float_compare(num_a, num_b)
-			lgn.debug("ALU Float Comparison: %s ? %s: %s" % (bm.user_btd(num_a), bm.user_btd(num_b), comparison))
 			if comparison == bm.FloatComparisonStates.greater_than:
 				comp = [1,0,0]
 			elif comparison == bm.FloatComparisonStates.equals:
@@ -580,37 +581,47 @@ FunctionDefinitions = [
 			[0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0],
 			[0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0],
 		],
-		[	#REG Swap----------------------------
+		[	#REG Swap-----------------------------------
 			[0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0],
 			[0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0],
 		],
 		[	#REG Clone
 			[0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0],
 		],
-		[	#STACK PUSH--------------------------10
+		[	#STACK PUSH UP------------------------------10
 			[0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0],
 			[0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0],
 			[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0],
 		],
-		[	#STACK POP
+		[	#STACK POP UP
 			[0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+			[0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,1,0,0],
+			[0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0],
+		],
+		[	#STACK PUSH DOWN
+			[0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0],
+			[0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0],
+			[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0],
+		],
+		[	#STACK POP DOWN
+			[0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
 			[0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,1,0,0],
 			[0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0],
 		],
 		[	#STACK POINT TO AT REGISTER
 			[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0],
 		],
-		[	#STACK GET POINTER
+		[	#STACK GET POINTER							15
 			[0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0],
 		],
-		[	#CONDITIONAL-------------------------
+		[	#CONDITIONAL--------------------------------
 			[1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0],
 			[0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
 		],
-		[	#INTERRUPT                           15
+		[	#INTERRUPT                           
 			[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
 		],
-		[	#CALL FUNCTION-----------------------
+		[	#CALL FUNCTION------------------------------
 			[0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0],	#Push to stack
 			[0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0],	#
 			[0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0],	#
@@ -625,17 +636,17 @@ FunctionDefinitions = [
 			[0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0],	#Push to stack
 			[0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0],	#RegA
 		],
-		[	#GPIO At Immediate Register Read-----
+		[	#GPIO At Immediate Register Read------------20
 			[1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0],	#
 			[0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0],	#
 			[0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0],	#
 		],
-		[	#GPIO At Address At Immediate Register Read
+		[	#GPIO At Address At Immediate Register Read	
 			[1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0],	#
 			[0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0],	#
 			[0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0],	#
 		],
-		[	#GPIO At Immediate Register Write    20
+		[	#GPIO At Immediate Register Write    
 			[1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0],	#
 			[0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0],	#
 			[0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0],	#
@@ -693,12 +704,22 @@ FunctionDefinitions = [
 		[	#REG Clone
 			[0,0,0,0,0,0,0,0,0,1,0,0,0,0,0],
 		],
-		[	#STACK PUSH
+		[	#STACK PUSH UP
 			[0,0,0,1,0,0,0,0,0,0,0,0,1,0,0],
 			[0,0,0,0,0,0,0,0,0,1,0,0,0,0,0],
 			[0,0,1,0,0,0,0,0,0,0,0,0,0,0,0],
 		],
-		[	#STACK POP
+		[	#STACK POP UP
+			[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0],
+			[0,0,1,0,0,0,0,0,0,0,0,0,0,0,0],
+			[0,0,0,0,0,1,0,0,0,0,0,0,0,0,0],
+		],
+		[	#STACK PUSH DOWN
+			[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0],
+			[0,0,0,0,0,0,0,0,0,1,0,0,0,0,0],
+			[0,0,1,0,0,0,0,0,0,0,0,0,0,0,0],
+		],
+		[	#STACK POP DOWN
 			[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0],
 			[0,0,1,0,0,0,0,0,0,0,0,0,0,0,0],
 			[0,0,0,0,0,1,0,0,0,0,0,0,0,0,0],
@@ -853,8 +874,8 @@ def ofs(func, instruction_vars):	#Offset
 	
 	#ftch, alu, rom, ram, reg, stck, conbrnch, intrpt, callretrn
 	#-----------------------------------------------------------------
-	ofs_array		= [2, 4,8,10,14,16,18]
-	ofs_use_var_a	= [0,1,0,0,0,0,0,1]
+	ofs_array		= [2,4,8,10,16,18,20]
+	ofs_use_var_a	= [0,1,0,1,0,0,0,1]
 	ofs_use_var_b	= [1,0,1,1,0,0,1,0]
 	
 	tl = []
@@ -865,6 +886,7 @@ def ofs(func, instruction_vars):	#Offset
 		ProgramCounter = reg(ReadWrite.READ, ProtReg.PROGRAMCOUNTER, RegType.PROTECTED)
 		lgn.critical("Offset: Error: Program Counter: %s: Invalid function number." % (bm.btd(ProgramCounter)))
 		return EmulatorRuntimeError.ILLEGALFUNCTION, -1
+	
 	if ofs_use_var_a[func]:
 		tl = bm.bla(tl, instruction_vars[RuntimeVariables.VARIABLEB.value])
 	
@@ -913,10 +935,6 @@ def execute(set_list, ena_list, gui=False,
 		var = reg(ReadWrite.READ, ProtReg.PROGRAMCOUNTER, RegType.PROTECTED)
 	if ena_list[2]:		#aor 
 		var = reg(ReadWrite.READ, ProtReg.AOR, RegType.PROTECTED)
-	# if ena_list[3]:		#Increment
-	# 	alu(variables)
-	# if ena_list[4]:		#Decrement
-	# 	alu()
 	if ena_list[5]:		#ramd 
 		tmp = reg(ReadWrite.READ, ProtReg.RAMADDRESS, RegType.PROTECTED)
 		var = ram(ReadWrite.READ, bm.btd(tmp), "RAMD ENABLE EXECUTE()")

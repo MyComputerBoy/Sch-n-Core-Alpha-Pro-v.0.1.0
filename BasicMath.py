@@ -2,7 +2,6 @@
 """
 
 import BaseCPUInfo
-
 import math as m 
 import GateLevel as g 
 from enum import Enum			#Enum for elimination of magic numbers

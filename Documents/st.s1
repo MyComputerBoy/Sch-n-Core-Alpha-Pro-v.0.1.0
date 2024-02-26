@@ -1,15 +1,15 @@
 io from 0 gpr 0
 io from 1 gpr 1
-stack push gpr 0
-stack push gpr 1
+stack push gpr 0 up
+stack push gpr 1 up
 mark loop_start
-stack pop gpr 0
-stack pop gpr 1
+stack pop gpr 0 up
+stack pop gpr 1 up
 io to 2 gpr 0
 io to 3 gpr 1
 io from 0 gpr 0
 io from 1 gpr 1
-stack push gpr 0
-stack push gpr 1
+stack push gpr 0 up
+stack push gpr 1 up
 loop_start
 eof

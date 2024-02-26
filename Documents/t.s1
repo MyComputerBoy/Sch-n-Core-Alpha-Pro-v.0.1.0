@@ -6,18 +6,18 @@ rom gpr 3 111111 float
 compute gpr 0 compare gpr 3 gpr 3 float
 if ==
 {
-stack pop gpr 0
-stack push gpr 0
+stack pop gpr 0 up
+stack push gpr 0 up
 }
 rom gpr 3 111111 float
 compute gpr 2 compare gpr 3 gpr 3 float
 if ==
 {
-stack pop gpr 2
-stack push gpr 2
+stack pop gpr 2 up
+stack push gpr 2 up
 }
-stack push gpr 0
-stack push gpr 2
+stack push gpr 0 up
+stack push gpr 2 up
 rom gpr 3 0 float
 compute gpr 1 compare gpr 3 gpr 3 float
 if ==
@@ -58,70 +58,70 @@ rom gpr 0 123456789 float
 io to 0 gpr 0
 eof_mark
 mark loop_end
-stack pop gpr 0
-stack push gpr 0
+stack pop gpr 0 up
+stack push gpr 0 up
 io to 0 gpr 0
 start
 mark eof_mark
 eof
 mark add
-stack pop gpr 1
-stack pop gpr 0
+stack pop gpr 1 up
+stack pop gpr 0 up
 compute gpr 0 add gpr 1 gpr 2 float
 stack push gpr 2
 loop_end
 mark sub
-stack pop gpr 1
-stack pop gpr 0
+stack pop gpr 1 up
+stack pop gpr 0 up
 compute gpr 0 sub gpr 1 gpr 2 float
 stack push gpr 2
 loop_end
 mark mul
-stack pop gpr 1
-stack pop gpr 0
+stack pop gpr 1 up
+stack pop gpr 0 up
 compute gpr 0 mul gpr 1 gpr 2 float
-stack push gpr 2
+stack push gpr 2 up
 loop_end
 mark div
-stack pop gpr 1
-stack pop gpr 0
+stack pop gpr 1 up
+stack pop gpr 0 up
 compute gpr 0 div gpr 1 gpr 2 float
-stack push gpr 2
+stack push gpr 2 up
 loop_end
 mark sqrt
-stack pop gpr 1
-stack pop gpr 0
+stack pop gpr 1 up
+stack pop gpr 0 up
 rom gpr 2 1 float
 rom gpr 3 0 float
-stack push gpr 0
-stack push gpr 1
-stack push gpr 2
-stack push gpr 3
+stack push gpr 0 up
+stack push gpr 1 up
+stack push gpr 2 up
+stack push gpr 3 up
 mark sqrt_loop_start
-stack pop gpr 3
-stack pop gpr 2
-stack pop gpr 1
-stack push gpr 1
-stack push gpr 2
-stack push gpr 3
+stack pop gpr 3 up
+stack pop gpr 2 up
+stack pop gpr 1 up
+stack push gpr 1 up
+stack push gpr 2 up
+stack push gpr 3 up
 compute gpr 1 compare gpr 3 gpr 3 float
 if ==
 {
-stack pop gpr 3
-stack pop gpr 2
-stack pop gpr 1
-stack pop gpr 0
-stack push gpr 2
+stack pop gpr 3 up
+stack pop gpr 2 up
+stack pop gpr 1 up
+stack pop gpr 0 up
+stack push gpr 2 up
 sqrt_end
 }
-stack pop gpr 3
-stack pop gpr 2
-stack pop gpr 1
-stack pop gpr 0
-stack push gpr 0
-stack push gpr 1
-stack push gpr 2
-stack push gpr 3
+stack pop gpr 3 up
+stack pop gpr 2 up
+stack pop gpr 1 up
+stack pop gpr 0 up
+stack push gpr 0 up
+stack push gpr 1 up
+stack push gpr 2 up
+stack push gpr 3 up
 compute gpr 2 mul gpr 2 gpr 4 float
 compute gpr 4 sub gpr 0 gpr 5 float
 rom gpr 6 2 float
@@ -130,12 +130,12 @@ compute gpr 5 div gpr 6 gpr 7 float
 compute gpr 2 sub gpr 7 gpr 8 float
 rom gpr 9 1 float
 compute gpr 3 add gpr 9 gpr 9 float
-stack pop gpr 3
-stack pop gpr 2
-stack pop gpr 1
-stack push gpr 1
-stack push gpr 8
-stack push gpr 9
+stack pop gpr 3 up
+stack pop gpr 2 up
+stack pop gpr 1 up
+stack push gpr 1 up
+stack push gpr 8 up
+stack push gpr 9 up
 sqrt_loop_start
 mark sqrt_end
 loop_end

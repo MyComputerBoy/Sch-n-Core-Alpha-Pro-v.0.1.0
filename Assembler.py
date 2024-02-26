@@ -108,13 +108,13 @@ function_params = [
 		[	[True], [None], [None,"float"], ["pass"] ],											#rom
 		[	[False], [None], [True], [None], ["pass"] ],						#ram
 		[	[True], [None], ["swap", "clone"], [True], [None],["pass"] ],		#reg
-		[	["push","pop", "set", "get"],[True], [None], ["pass"] ],			#stack
+		[	["push","pop", "set", "get"],[True], [None], ["up", "down"] ],		#stack
 		[	[True], [None], ["pass"] ],											#interrupt
 		[	[False], [None], [True], [None],["pass"] ],							#io
 		[	[None], [False], [None], ["pass"] ],													#call/return function
 	],
 	[	#Setup special device parameters (e.g. ALU)
-		[	[True], [None], ["add","sub","mul","div","and","or","xor","not","shift","","","","","","","compare"],[True],[None],[True],[None],["int", "float", "char", "string", "bool", "array", "list"], ["pass"] ],
+		[	[True], [None], ["add","sub","mul","div","intdiv","or","xor","not","shift","","","","","","","compare"],[True],[None],[True],[None],["int", "float", "char", "string", "bool", "array", "list"], ["pass"] ],
 	],
 	[
 		[	[None] ],
@@ -429,13 +429,13 @@ def Assemble( filename: str, dest_name: str ):
 			},
 		1: {	#Standard functions
 		
-				0: [4,3,0,1,2,5,6,7],
-				1: [1,0,2,3,4,5,6,7],
-				2: [2,3,1,4,5,6,7,0],
-				3: [0,2,3,1,4,5,6,7],
-				4: [0,1,2,3,4,5,6,7],
-				5: [0,1,2,3,4,5,6,7],
-		
+				0: [4,3,0,1,2,5,6,7],	#rom
+				1: [1,0,2,3,4,5,6,7],	#ram
+				2: [2,3,1,4,5,6,7,0],	#reg
+				3: [0,2,3,1,4,5,6,7],	#stack
+				4: [0,1,2,3,4,5,6,7],	#interrupt
+				5: [0,1,2,3,4,5,6,7],	#io
+				
 			},
 		2: {	#ALU functions
 		
