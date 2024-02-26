@@ -534,6 +534,7 @@ def cls(r=0, g=0, b=0):
 				regs[i][j] = ZeroWord()
 
 def pr(lst, gui=False):#Print function
+	advanced_show = False
 	if gui == True:
 		print(str(bm.blts(lst, False, True)))
 	elif gui == "not":
@@ -541,7 +542,10 @@ def pr(lst, gui=False):#Print function
 	elif gui == "bin":
 		print(bm.btbs(lst))
 	else:
-		print("Output: " + str(bm.user_btd(lst)))
+		if advanced_show:
+			print("Output: %s | %s" % (str(bm.user_btd(lst)), str(bm.btd(lst))))
+		else:
+			print("Output: %s" % (bm.user_btd(lst)))
 
 #Defining the functions pin outputs
 FunctionDefinitions = [

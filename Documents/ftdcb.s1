@@ -1,5 +1,6 @@
 rom gpr 0 123 float
 stack push gpr 0 up
+stack get gpr 10 up
 mark loop_start
 ram from 0 gpr 0
 rom gpr 1 10 float
@@ -12,8 +13,6 @@ rom gpr 5 0 float
 compute gpr 2 compare gpr 5 gpr 5 float
 if <=
 {
-rom gpr 0 1111 float
-io to 0 gpr 0
 loop_exit
 }
 loop_start
@@ -21,9 +20,8 @@ mark loop_exit
 mark out_loop
 stack pop gpr 0 down
 io to 0 gpr 0
-rom gpr 0 1 int
 stack get gpr 1 up
-compute gpr 0 compare gpr 1 gpr 1 int
+compute gpr 1 compare gpr 10 gpr 1 int
 if ==
 {
 out_loop_exit
