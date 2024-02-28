@@ -14,7 +14,8 @@ class FloatComparisonStates(Enum):
 
 bw = BaseCPUInfo.bit_width
 
-string_index = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%^&*()_+-=[];'\\,./{}:||<>? "
+string_index = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%^&*()_+-=[];'\\,./{}:|<>? \n"
+string_formatted_index = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%^&*()_+-=[];'\\,./{}:|<>? Â§"
 
 #Convert floating point to binary representation
 def dtb( int, l=bw ):
@@ -84,11 +85,33 @@ def user_btd( input ):
 		return v
 	return -v
 
+def find_char_in_string_line(line):
+	q = ""
+	initial_quote_found = False
+	for char in line:
+		if char == "'" and initial_quote_found == False:
+			initial_quote_found = True
+			q += "'"
+		elif char == "'" and initial_quote_found == True:
+			q += "'"
+			break
+		elif initial_quote_found:
+			q += char
+	return q
+
+def unwrap_char(string_input):
+	if string_input[0] == "'":
+		string_input = string_input.rsplit("'")[1]
+		return string_input
+
 def user_ctb(char):
-	return btd(string_index.index(char))
+	return dtb(string_formatted_index.index(char))
 
 def user_btc(list):
-	return string_index[btd(list)]
+	try:
+		return string_index[btd(list)]
+	except IndexError:
+		raise IndexError
 
 def float_compare(num_a, num_b):
 	float_a = user_btd(num_a)
@@ -112,6 +135,7 @@ def char_Write(num_a, num_b, num_c):
 	return num_a
 
 def string_char_append(num_a, num_b):
+	co = False
 	if btd(num_a[0:8]) == 0:
 		num_a[0:8] = num_b[0:8]
 	elif btd(num_a[8:16]) == 0:
@@ -120,7 +144,9 @@ def string_char_append(num_a, num_b):
 		num_a[16:24] = num_b[0:8]
 	elif btd(num_a[24:32]) == 0:
 		num_a[24:32] = num_b[0:8]
-	return num_a
+	else:
+		co = True
+	return num_a, co
 
 def string_string_append(num_a, num_b):
 	if btd(num_a[0:8]) == 0:

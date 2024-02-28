@@ -431,7 +431,7 @@ def alu(instruction_variables=None):		#//Update for new ALU
 			return ALUReturnStates.InvalidFunction
 	elif type == ALUType.string.value:
 		if func == ALUStringFunction.char_append.value:
-			q = bm.string_char_append(num_a, num_b)
+			q, co = bm.string_char_append(num_a, num_b)
 		elif func == ALUStringFunction.string_append.value:
 			q = bm.string_string_append(num_a, num_b)
 		elif func == ALUStringFunction.char_read.value:
@@ -543,15 +543,23 @@ def pr(lst, gui=False):#Print function
 	advanced_show = False
 	if gui == True:
 		print(str(bm.blts(lst, False, True)))
+		return ExecuteReturnStates.NoError
 	elif gui == "not":
 		print(str(bm.btd(lst)))
+		return ExecuteReturnStates.NoError
 	elif gui == "bin":
 		print(bm.btbs(lst))
-	else:
-		if advanced_show:
-			print("Output: %s | %s" % (str(bm.user_btd(lst)), str(bm.user_btc(lst))))
-		else:
-			print("Output: %s" % (bm.user_btc(lst)))
+		return ExecuteReturnStates.NoError
+	
+	if advanced_show:
+		print("Output: %s | %s" % (str(bm.user_btd(lst)), str(bm.user_btc(lst))))
+		return ExecuteReturnStates.NoError
+	try:
+		print(bm.user_btc(lst), end="")
+		return ExecuteReturnStates.NoError
+	except IndexError:
+		print("Error: Invalid character.")
+		return ExecuteReturnStates.UnknownError
 
 #Defining the functions pin outputs
 FunctionDefinitions = [
@@ -1026,7 +1034,9 @@ def execute(set_list, ena_list, gui=False,
 	if set_list[8]:		#gpoa
 		lgn.info("Set GPIO Address: %s" % (bm.btd(var)))
 	if set_list[9]:		#gpod
-		pr(var, gui)
+		prr = pr(var, gui)
+		if prr != ExecuteReturnStates.NoError:
+			raise Exception
 	if set_list[11]:	#pid
 		temp = reg(ReadWrite.READ, reg_a[0], reg_a[1])
 		lgn.debug("RID: %s:%s -> %s" % (reg_b[0], reg_b[1], bm.btd(temp)))

@@ -1,0 +1,27 @@
+rom gpr 0 'h' char
+io to 0 gpr 0
+rom gpr 0 'e' char
+io to 0 gpr 0
+rom gpr 0 'l' char
+io to 0 gpr 0
+rom gpr 0 'l' char
+io to 0 gpr 0
+rom gpr 0 'o' char
+io to 0 gpr 0
+rom gpr 0 ' ' char
+io to 0 gpr 0
+rom gpr 0 'w' char
+io to 0 gpr 0
+rom gpr 0 'o' char
+io to 0 gpr 0
+rom gpr 0 'r' char
+io to 0 gpr 0
+rom gpr 0 'l' char
+io to 0 gpr 0
+rom gpr 0 'd' char
+io to 0 gpr 0
+rom gpr 0 '!' char
+io to 0 gpr 0
+rom gpr 0 '§' char
+io to 0 gpr 0
+eof

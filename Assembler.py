@@ -57,6 +57,7 @@ class AbstractFunctions(Enum):
 	_else = "else"
 	_elif = "elif"
 	_pass = "pass"
+	_def = "def"
 
 class FunctionNames(Enum):
 	If = IfNames
@@ -89,7 +90,7 @@ function_names = [
 	[	"if" ],
 	[	"rom", "ram", "reg", "stack", "interrupt", "io", "call"],
 	[	"compute" ],
-	[	"mark",	"else",	"elif",	"pass", ],
+	[	"mark",	"else",	"elif",	"pass", "def"],
 ]
 
 sei = [ "{", "}", ]					#Start end indicator
@@ -105,7 +106,7 @@ function_params = [
 		[	["jump", ">", "==", ">=", "<", "!=", "<=", "weird", "co", ">c", "==c", ">=c", "<c", "!=c", "<=c"], ["pass"] ],
 	],
 	[	#Setup general function parameters, True=types of regs, False=to/from, None=nan (copy user input in general), "pass"=stop checking for parameters
-		[	[True], [None], [None,"float"], ["pass"] ],							#rom
+		[	[True], [None], ["int","float","char","string","bool"], ["pass"] ],	#rom
 		[	[False], [None], [True], [None], ["pass"] ],						#ram
 		[	[True], [None], ["swap", "clone"], [True], [None],["pass"] ],		#reg
 		[	["push","pop", "set", "get"],[True], [None], ["up", "down"] ],		#stack
@@ -392,6 +393,78 @@ def GetVariableOrder(MainType: int, FuncNum: int, BVL: list, BVI: list, ReorderD
 	
 	return QBVL, QBVI
 
+def GetEscapeFromInscape(lines, starting_line, starting_bin_line, il, marks):
+	ln_n = starting_line
+	il += 1
+	rel_ln = 1
+	used_in_escape = 1
+	bin_ln = starting_bin_line
+	
+	try:
+		temp_unused_var = lines[ln_n + rel_ln]
+	except Exception:
+		lgn.critical( "Error: ln %s: Expected if inscape, got none" % (str( ln_n + 1 )) )
+		return -1
+	rel_rel_ln = 1
+	
+	#If binary lines 
+	iblns = {
+		function_names[1][0]: 2,
+		function_names[1][1]: 2,
+		function_names[1][5]: 2,
+		function_names[3][0]: 0
+	}
+	while HandleSEI( ln_n + 1 + rel_rel_ln, lines, used_in_escape ):
+		try:
+			temp_unused_var = lines[ln_n + rel_ln + rel_rel_ln].split()
+			temp_func = temp_unused_var.pop( 0 )
+			try:
+				temp_temp_unused_var = lines[ln_n + rel_ln + rel_rel_ln + 2].split()
+				temp_temp_func = temp_temp_unused_var.pop( 0 )
+			except:
+				temp_temp_func = ""
+			if temp_func in iblns:
+				bin_rel_ln += iblns[temp_func]
+			elif temp_func == sei[0]:
+				used_in_escape += 1
+				bin_rel_ln += 1
+			elif temp_func == sei[1] and used_in_escape > 1:
+				used_in_escape -= 1
+			elif temp_func in marks:
+				bin_rel_ln += 2
+			else:
+				bin_rel_ln += 1
+			rel_rel_ln += 1
+			try:
+				temp_unused_var = lines[ln_n + 1 + rel_rel_ln]
+			except:
+				lgn.critical("If: Error: ln: %s: Expected if escape, got none, 0" % (ln_n + 1))
+				return -1, -1
+		except:
+			lgn.critical("If: Error: ln: %s: Expected if escape, got none, 1" % (ln_n + 1))
+			return -1, -1
+	if temp_temp_func == function_names[3][1] or temp_temp_func == function_names[3][2]:
+		bin_rel_ln += 2
+
+	return bin_ln + 2 + bin_rel_ln, il
+
+def FindSubroutines(lines):
+	SubroutineNames = []
+	SubroutineBinaryLineIndecies = []
+
+	for ln_n, line in enumerate(lines):
+
+		split_line = line.split()
+		func_var = split_line.pop(0)
+
+		try:
+			nextLine = lines[ln_n+1].split()
+			nextLineFunc = nextLine.pop(0)
+		except IndexError:
+			pass
+	
+	return SubroutineNames, SubroutineBinaryLineIndecies
+
 def Assemble( filename: str, dest_name: str ):
 	"""Assemble(filename: str, dest_name: str) -> Function to call for assembly of filename to dest_name, dest_name automatically apllies ".schonexe" postfix
 	Parameters:
@@ -455,7 +528,10 @@ def Assemble( filename: str, dest_name: str ):
 			break 
 		eofln += 1
 	
+	SubroutineNames, SubroutineLineIndecies = FindSubroutines(lines)
+
 	lgn.debug( "EOL: " + str( eofln ) )
+	lgn.debug( "Subroutines: %s" % (SubroutineNames))
 	lgn.debug( "IF_MARKS: " )
 	lgn.debug( if_marks )
 
@@ -534,58 +610,10 @@ def Assemble( filename: str, dest_name: str ):
 					raise Exception
 				ln_n += 1
 			else:									#IF
-				il += 1
-				rel_ln = 1
-				used_in_escape = 1
-				
-				try:
-					temp_unused_var = lines[ln_n + rel_ln]
-				except Exception:
-					lgn.critical( "Error: ln %s: Expected if inscape, got none" % (str( ln_n + 1 )) )
-					return -1
-				rel_rel_ln = 1
-				
-				#If binary lines 
-				iblns = {
-					function_names[1][0]: 2,
-					function_names[1][1]: 2,
-					function_names[1][5]: 2,
-					function_names[3][0]: 0
-				}
-				while HandleSEI( ln_n + 1 + rel_rel_ln, lines, used_in_escape ):
-					try:
-						temp_unused_var = lines[ln_n + rel_ln + rel_rel_ln].split()
-						temp_func = temp_unused_var.pop( 0 )
-						try:
-							temp_temp_unused_var = lines[ln_n + rel_ln + rel_rel_ln + 2].split()
-							temp_temp_func = temp_temp_unused_var.pop( 0 )
-						except:
-							temp_temp_func = ""
-						if temp_func in iblns:
-							bin_rel_ln += iblns[temp_func]
-						elif temp_func == sei[0]:
-							used_in_escape += 1
-							bin_rel_ln += 1
-						elif temp_func == sei[1] and used_in_escape > 1:
-							used_in_escape -= 1
-						elif temp_func in marks:
-							bin_rel_ln += 2
-						else:
-							bin_rel_ln += 1
-						rel_rel_ln += 1
-						try:
-							temp_unused_var = lines[ln_n + 1 + rel_rel_ln]
-						except:
-							lgn.critical("If: Error: ln: %s: Expected if escape, got none, 0" % (ln_n + 1))
-							return -1
-					except:
-						lgn.critical("If: Error: ln: %s: Expected if escape, got none, 1" % (ln_n + 1))
-						return -1
-				if temp_temp_func == function_names[3][1] or temp_temp_func == function_names[3][2]:
-					bin_rel_ln += 2
+				IfEscape, il = GetEscapeFromInscape(lines, ln_n, bin_ln, il, marks)
 				
 				full_binary_function[0:4] = [0,0,1,0]
-				nextLines[0] = bm.dtb( bin_ln + 2 + bin_rel_ln )
+				nextLines[0] = bm.dtb( IfEscape )
 				
 				#Get reference binary variable lenght and indexes
 				bvl = _StaticBinVarLength_.copy()
@@ -640,7 +668,11 @@ def Assemble( filename: str, dest_name: str ):
 				if vars[3] == "float":
 					nextLines[0] = bm.user_dtb(float(vars[2]))
 				elif vars[3] == "char":
-					nextLines[0] = bm.user_ctb(vars[2][0])
+					temporary = lines[ln_n]
+					nextLines[0] = bm.user_ctb(bm.unwrap_char(bm.find_char_in_string_line(temporary)))
+				elif vars[4] == "char":
+					temporary = lines[ln_n]
+					nextLines[0] = bm.user_ctb(bm.unwrap_char(bm.find_char_in_string_line(temporary)))
 				else:
 					nextLines[0] = bm.dtb(int(vars[2]))
 			except Exception:
@@ -703,6 +735,8 @@ def Assemble( filename: str, dest_name: str ):
 					nextLines[2] = bm.dtb( getBinLine( lines, t[str(tn+1)]["1"] + 2, marks ) )
 			if nextLines[0] == None:
 				raise CustomException("Error: ln %s: if statement was not encoded right, 1" % (ln_n + 1))
+		elif func_var == FunctionNames.Abstract.value._def.value:
+			pass
 		elif func_var == sei[1] and sfunc_var != function_names[3][1] and sfunc_var != function_names[3][2] and sfunc_var in funcs_names:
 			il -= 1
 		elif func_var in sei or func_var == function_names[3][0] or func_var == "":
