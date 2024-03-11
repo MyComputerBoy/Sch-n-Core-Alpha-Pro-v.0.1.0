@@ -38,7 +38,7 @@ class CustomException(Exception):
 	pass
 
 class IfNames(Enum):
-	If = "if"
+	If = "branch"
 
 class StandardFunctions(Enum):
 	rom = "rom"
@@ -87,17 +87,21 @@ alu_types = [
 ]
 
 function_names = [
-	[	"if" ],
+	[	"branch" ],
 	[	"rom", "ram", "reg", "stack", "interrupt", "io", "call"],
 	[	"compute" ],
 	[	"mark",	"else",	"elif",	"pass", "def"],
+]
+
+branch_special_cases = [
+	"pointer",
+	"conditional",
 ]
 
 sei = [ "{", "}", ]					#Start end indicator
 tfn = [ "to", "from", ]				#To from names
 #General purpose, alu, stack pointers, interrupt, special purpose
 regs = ["gpr","alur","stk","spr"]	#Register names in order
-jump_name = "jump"					#Jump name
 define = "def"						#Keyword to define a function
 eof = "eof"							#EOF indicator name
 
@@ -601,8 +605,13 @@ def Assemble( filename: str, dest_name: str ):
 		if func_var == eof:
 			full_binary_function = bm.dtb( -1 )
 		elif func_var == FunctionNames.If.value.If.value:
-			if vars[0] == jump_name:	#JUMP
-				full_binary_function[5] = 1
+			if vars[0] not in branch_special_cases:	#branch
+				nextLines[0] = str(vars[1])
+			elif vars[0] == branch_special_cases[0]:	#branch pointer
+				full_binary_function[8] = 1
+				nextLines[0] = str(vars[1])
+			elif vars[0] == branch_special_cases[1]:	#conditional
+				full_binary_function[7] = 1
 				try:
 					nextLines[0] = bm.dtb( getBinLine( lines, int( lines[ln_n+1] ), marks ) )
 				except:

@@ -38,7 +38,7 @@ class RunningStates(Enum):
 	ExitUnknownError = 4
 	ExitWithErrorMessage = 5
 
-class WorkingFile():	
+class WorkingFile():
 
 	#Constants
 	_VersionName_: str = "Schön Core Alpha v.0.1.0" #Keep constant!	
@@ -60,21 +60,29 @@ class WorkingFile():
 	IfStatementsEncountered: int = 0
 	EndOfFileLineNumber: int = 0
 
-	IfMarks: list = None
+	#Meta information about working file
+	BranchMarks: list = None
 	Marks: list = None
 	FunctionIndecies: list = None
 	FunctionNames: list = None
 
+	#Assembling information
+	AssemblingBinaryLine = None
+	AssemblingBinaryNextLine = None
+
+	#State of assembling
 	RunningState = RunningStates.Initializing
 
 	def WorkingFile(self) -> None:                  #Initialize clas		
 		self.RawFile = []
 		self.MetaInfoAssembling = []
 		self.MainAssembling = []
-		self.IfMarks = []
+		self.BranchMarks = []
 		self.Marks = []
 		self.FunctionIndecies = []
 		self.FunctionNames = []	
+		self.AssemblingBinaryLine = [bm.dtb(0)]
+		self.AssemblingBinaryNextLine = []
 
 		lgn.debug("WorkingFile: Initialized Workingfile class.")
 
@@ -129,8 +137,48 @@ class WorkingFile():
 				if Function == AbstractFunctions.mark.value:
 					self.Marks.append(Function)
 
-class IfNames(Enum):
-	If = "if"
+class BinaryInstructionInfo(Enum):
+	MainFunction = [0,4]
+	IsALU = [5,5]
+	VariableA = [5,9]
+	VariableB = [9,11]
+	RegisterA = [11,18]
+	RegisterB = [18,25]
+	RegisterC = [25,32]
+
+class BranchNames(Enum):
+	Branch = "branch"
+
+	def _Has_Value_(self, element: str) -> bool:
+		return element in self._value2member_map_
+
+class BranchVariables(Enum):
+	pointer = "pointer"
+	conditional = "conditional"
+
+class BranchConditionalComparisonParameters(Enum):
+	LargerThan = ">"
+	Equals = "="
+	LargerOrEquals = ">="
+	LessThan = "<"
+	NotEquals = "!="
+	LessOrEquqals = "<="
+
+	def _Has_Value_(self, element: str) -> bool:
+		return element in self._value2member_map_
+
+class BranchConditionalIndecies(Enum):
+	LargerThan = 1
+	Equals = 2
+	LargerOrEquals = 3
+	LessThan = 4
+	NotEquals = 5
+	LessOrEquqals = 6
+
+class BranchFlagParameters(Enum):
+	CarryOut = "co"
+	IsZero = "iz"
+	OverFlow = "of"
 
 	def _Has_Value_(self, element: str) -> bool:
 		return element in self._value2member_map_
@@ -185,7 +233,7 @@ class VariableTypes(Enum):
 		return element in self._value2member_map_
 
 class FunctionNames(Enum):
-	If = IfNames
+	Branch = BranchNames
 	Standard = StandardFunctions
 	ALU = ALUFunctions
 	Abstract = AbstractFunctions
@@ -204,7 +252,73 @@ class TokenTypes(Enum):
 	Number = 2
 	Unknown = 3
 
-def GetTokens(Line: str) -> list:
+class WrapperInscapeEscapes(Enum):
+	Inscape = "{"
+	Escape = "}"
+
+	def _Has_Value_(self, element: str) -> bool:
+		return element in self._value2member_map_
+	
+	def IsInscape(self, element: str) -> bool:
+		return element == WrapperInscapeEscapes.Inscape.value
+	
+	def IsEscape(self, element: str) -> bool:
+		return element == WrapperInscapeEscapes.Escape.value
+
+class MathematicalInscapeEscape(Enum):
+	Inscape = "("
+	Escape = ")"
+	
+	def _Has_Value_(self, element: str) -> bool:
+		return element in self._value2member_map_
+	
+	def IsInscape(self, element: str) -> bool:
+		return element == MathematicalInscapeEscape.Inscape.value
+	
+	def IsEscape(self, element: str) -> bool:
+		return element == MathematicalInscapeEscape.Escape.value
+
+class InscapeEscapeTypes(Enum):
+	Wrapper = WrapperInscapeEscapes
+	Mathematical = MathematicalInscapeEscape
+
+	def _Has_Value_(self, element: str) -> bool:
+		return element in self._value2member_map_
+	
+	def IsInscape(self, element: str, ScapeType) -> bool:
+		if ScapeType == InscapeEscapeTypes.Wrapper:
+			return WrapperInscapeEscapes.IsInscape(element)
+		elif ScapeType == InscapeEscapeTypes.Mathematical:
+			return MathematicalInscapeEscape.IsInscape(element)
+		else:
+			return TypeError
+	
+	def IsEscape(self, element: str, ScapeType) -> bool:
+		if ScapeType == InscapeEscapeTypes.Wrapper:
+			return WrapperInscapeEscapes.IsEscape(element)
+		elif ScapeType == InscapeEscapeTypes.Mathematical:
+			return MathematicalInscapeEscape.IsEscape(element)
+		else:
+			return TypeError
+
+class InscapeEscapeExits(Enum):
+	NoError = 0
+	EscapeNotFound = 1
+	InscapeNotFound = 2
+	UnknownError = 3
+
+FunctionIndecies = [
+	"rom",
+	"ram",
+	"register",
+	"stack",
+	"branch",
+	"interrupt",
+	"call_subroutine",
+	"generel_io",
+]
+
+def GetTokens(Line: str):
 	
 	i = 0
 	char = ''
@@ -253,6 +367,55 @@ def GetTokens(Line: str) -> list:
 
 	return tokens
 
+def GetEscapeFromInscape(Lines: list, InscapeLine: int, InscapeIndex: int, InscapeType: InscapeEscapeTypes):
+	GetEscapeState = RunningStates.Running
+
+	LineNumber = InscapeLine
+	LineIndex = InscapeIndex
+
+	Inscapes = 0
+
+	while GetEscapeState == RunningStates.Running:
+		try:
+			line = Lines[LineNumber]
+		except IndexError:
+			return InscapeEscapeExits.EscapeNotFound
+		
+		while LineIndex < len(line):
+			char = line[LineIndex]
+			if InscapeEscapeTypes.IsInscape(char, InscapeType):
+				Inscapes += 1
+			elif InscapeEscapeTypes.IsEscape(char, InscapeType) and Inscapes > 0:
+				Inscapes -= 1
+			elif InscapeEscapeTypes.IsEscape(char, InscapeType) and Inscapes == 0:
+				return LineNumber, LineIndex
+			LineIndex += 1
+		LineNumber += 1
+	
+	return InscapeEscapeExits.EscapeNotFound
+
+def GetInscapeOnLine(Lines: list, InscapeLine: int, InscapeType: InscapeEscapeTypes):
+	GetInscapeState = RunningStates.Running
+
+	LineNumber = InscapeLine
+
+	LineNumber = InscapeLine
+	LineIndex = 0
+
+	while GetInscapeState == RunningStates.Running:
+		try:
+			line = Lines[LineNumber]
+		except IndexError:
+			return InscapeEscapeExits.InscapeNotFound
+
+		while LineIndex < len(line):
+			char = line[LineIndex]
+			if InscapeEscapeTypes.IsInscape(char, InscapeType):
+				return LineNumber, LineIndex
+			LineIndex += 1
+		return InscapeEscapeExits.InscapeNotFound
+	return InscapeEscapeExits.UnknownError
+
 def Main(ImportFilename: str, DestinationName: str) -> None:
 	"""ASM.Main(ImportFilename: str, DestinationName: str) -> Main assembler
 	"""
@@ -282,21 +445,60 @@ def Main(ImportFilename: str, DestinationName: str) -> None:
 
 		#Handle tokens
 		tokens = GetTokens(Line)
-		Function = tokens[0]
+		Function = tokens.pop(0)
+		Variables = tokens
+
+		ExpectHandlingFunctionNumber = False
+
+		try:
+			worker_file.WorkingBinaryLineNumber[0:4] = bm.dtb(FunctionIndecies.index(Function), 4)
+		except ValueError:
+			ExpectHandlingFunctionNumber = True
 
 		#Handle functions
 		if (FunctionNames._Has_Value_(Function) == False and 
 	  		Function in worker_file.FunctionNames):
 			pass
 		elif (FunctionNames._Has_Value_(Function) == False and 
-				Function in worker_file.Marks):
+			Function in worker_file.Marks):
 			pass
 		elif FunctionNames._Has_Value_(Function) == False:
 			pass
-		if IfNames._Has_Value_(Function):
-			pass
+		elif BranchNames._Has_Value_(Function):
+			UsingImmediate = True
+			ExpectComparison = False
+			
+			if Variables[0] == BranchVariables.conditional.value:
+				Variables.pop(0)
+				UsingImmediate = False
+				ExpectComparison = True
+			
+			if Variables[0] == BranchVariables.pointer.value:
+				Variables.pop(0)
+				UsingImmediate = True
+			
+			if UsingImmediate:
+				pass
+
+			if ExpectComparison:
+				pass
 		elif StandardFunctions._Has_Value_(Function):
-			pass
+			if Function == StandardFunctions.rom.value:
+				pass
+			elif Function == StandardFunctions.ram.value:
+				pass
+			elif Function == StandardFunctions.register.value:
+				pass
+			elif Function == StandardFunctions.stack.value:
+				pass
+			elif Function == StandardFunctions.interrupt.value:
+				pass
+			elif Function == StandardFunctions.ram.value:
+				pass
+			elif Function == StandardFunctions.general_io.value:
+				pass
+			elif Function == StandardFunctions.call_subroutine.value:
+				pass
 		elif ALUFunctions._Has_Value_(Function):
 			pass
 		elif AbstractFunctions._Has_Value_(Function):
@@ -308,6 +510,9 @@ def Main(ImportFilename: str, DestinationName: str) -> None:
 		else:
 			worker_file.RunningState = RunningStates.ExitUnknownFunction
 	
+		if ExpectHandlingFunctionNumber == True:
+			worker_file.RunningState = RunningStates.ExitUnknownFunction
+
 	if worker_file.RunningState != RunningStates.ExitNoError:
 		return worker_file.RunningState
 	
