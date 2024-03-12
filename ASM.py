@@ -63,8 +63,7 @@ class WorkingFile():
 	#Meta information about working file
 	BranchMarks: list = None
 	Marks: list = None
-	FunctionIndecies: list = None
-	FunctionNames: list = None
+	UserFunctions: list = None
 
 	#Assembling information
 	AssemblingBinaryLine = None
@@ -78,8 +77,8 @@ class WorkingFile():
 		self.MetaInfoAssembling = []
 		self.MainAssembling = []
 		self.BranchMarks = []
-		self.Marks = []
-		self.FunctionIndecies = []
+		self.Marks = {}
+		self.UserFunctions = []
 		self.FunctionNames = []	
 		self.AssemblingBinaryLine = [bm.dtb(0)]
 		self.AssemblingBinaryNextLine = []
@@ -106,6 +105,13 @@ class WorkingFile():
 		self.WorkingLineNumber += 1
 		return q
 
+	def TryGetNextLine(self) -> str:
+		try:
+			q: str = self.RawFile[self.WorkingFile + 1]
+		except IndexError:
+			return None
+		return q
+ 
 	def GetMetaInfo(self) -> None:
 		
 		_worker_file = WorkingFile()
@@ -122,20 +128,29 @@ class WorkingFile():
 			if Line == -1:
 				_worker_file.RunningState = RunningStates.ExitNoError
 				break
+			
+			NextLine = _worker_file.TryGetNextLine()
 
 			#Handle tokens and function
 			tokens = GetTokens(Line)
-			Function = tokens[0]
+			Function = tokens.pop(0)
+			MetaName = tokens.pop(0)
 
-			if VariableTypes._Has_Value_(Function):
-				TemporaryFunctionName = Function
-				TemporaryFunctionIndex = _worker_file.WorkingLineNumber
+			NextLineTokens = GetTokens(NextLine)
+			NextLineFunction = NextLineTokens.pop(0)
 
-				self.FunctionNames.append(TemporaryFunctionName)
-				self.FunctionIndecies.append(TemporaryFunctionIndex)
+			if Function == AbstractFunctions._def.value:
+				self.FunctionNames[str(MetaName)] = _worker_file.WorkingLineNumber
 			elif FunctionNames._Has_Value_(Function):
 				if Function == AbstractFunctions.mark.value:
-					self.Marks.append(Function)
+					self.Marks[str(MetaName)] = _worker_file.WorkingFile
+			elif (Function == BranchNames.Branch.value and
+				NextLineFunction == SpecialCaseFunctions.StartBrace.value):
+				self.IfStatementsEncountered += 1
+				self.WorkingLineNumber += 1
+				BranchEscapeLine, BranchEscapeIndex = GetEscapeFromInscape(
+        			self.WorkingLineNumber, 1, InscapeEscapeTypes.Wrapper)
+				
 
 class BinaryInstructionInfo(Enum):
 	MainFunction = [0,4]
@@ -307,6 +322,40 @@ class InscapeEscapeExits(Enum):
 	InscapeNotFound = 2
 	UnknownError = 3
 
+class RegisterNames(Enum):
+	GeneralPurpose = "gpr"
+	ArithmeticLogic = "alur"
+	Stack = "stk"
+	SpecialPurpose = "spr"
+    
+	def _Has_Value_(self, element: str) -> bool:
+		return element in self._value2member_map_
+
+class InscapeEscapeNames(Enum):
+	Inscape = "{"
+	Escape = "}"
+	
+	def _Has_Value_(self, element: str) -> bool:
+		return element in self._value2member_map_
+
+class ToFromNames(Enum):
+	To = "to"
+	From = "from"
+	
+	def _Has_Value_(self, element: str) -> bool:
+		return element in self._value2member_map_
+
+class GenericFunctionParameterNames(Enum):
+	Registers = RegisterNames
+	InscapeEscapes = InscapeEscapeNames
+	ToFroms = ToFromNames
+
+	def _Has_Value_(self, element: str) -> bool:
+		for element in self._value2member_map_:
+			if element._Has_Value_(element):
+				return True 
+		return False
+
 FunctionIndecies = [
 	"rom",
 	"ram",
@@ -367,7 +416,7 @@ def GetTokens(Line: str):
 
 	return tokens
 
-def GetEscapeFromInscape(Lines: list, InscapeLine: int, InscapeIndex: int, InscapeType: InscapeEscapeTypes):
+def GetEscapeFromInscape(Lines: list, InscapeLine: int, InscapeIndex: int, InscapeType: InscapeEscapeTypes) -> list | InscapeEscapeExits:
 	GetEscapeState = RunningStates.Running
 
 	LineNumber = InscapeLine
@@ -448,8 +497,8 @@ def Main(ImportFilename: str, DestinationName: str) -> None:
 		Function = tokens.pop(0)
 		Variables = tokens
 
+		#Handle function number
 		ExpectHandlingFunctionNumber = False
-
 		try:
 			worker_file.WorkingBinaryLineNumber[0:4] = bm.dtb(FunctionIndecies.index(Function), 4)
 		except ValueError:
