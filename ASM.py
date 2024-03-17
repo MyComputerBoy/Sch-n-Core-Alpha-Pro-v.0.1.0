@@ -43,7 +43,7 @@ class WorkingFile():
 	#Constants
 	_VersionName_: str = "Schön Core Alpha v.0.1.0" #Keep constant!	
 	_ImportExtension_: str = ".s1"                  #Keep constant!
-	_AssembledExtension_: str = "schonexe1"         #Keep constant!	
+	_AssembledExtension_: str = ".schonexe1"        #Keep constant!	
 	
 	#Path of working file
 	ImportedFileName: str = None
@@ -132,7 +132,7 @@ class WorkingFile():
 			NextLine = _worker_file.TryGetNextLine()
 
 			#Handle tokens and function
-			tokens = GetTokens(Line)
+			_tokens = tokens = GetTokens(Line)
 			Function = tokens.pop(0)
 			MetaName = tokens.pop(0)
 
@@ -146,10 +146,27 @@ class WorkingFile():
 					self.Marks[str(MetaName)] = _worker_file.WorkingFile
 			elif (Function == BranchNames.Branch.value and
 				NextLineFunction == SpecialCaseFunctions.StartBrace.value):
-				self.IfStatementsEncountered += 1
+				
+				if BranchVariables.conditional.value in _tokens:
+					self.IfStatementsEncountered += 1
+
 				self.WorkingLineNumber += 1
+
 				BranchEscapeLine, BranchEscapeIndex = GetEscapeFromInscape(
         			self.WorkingLineNumber, 1, InscapeEscapeTypes.Wrapper)
+
+				self.BranchMarks[str(self.IfStatementsEncountered)] = BranchEscapeLine
+			elif IfElifElseFunctions._Has_Value_(Function):
+				
+				if Function == IfElifElseFunctions._if:
+					self.IfStatementsEncountered += 1
+
+				self.WorkingLineNumber += 1
+    
+				BranchEscapeLine, BranchEscapeIndex = GetEscapeFromInscape(
+        			self.WorkingLineNumber, 1, InscapeEscapeTypes.Wrapper)
+
+				self.BranchMarks[str(self.IfStatementsEncountered)] = BranchEscapeLine
 				
 
 class BinaryInstructionInfo(Enum):
@@ -189,6 +206,14 @@ class BranchConditionalIndecies(Enum):
 	LessThan = 4
 	NotEquals = 5
 	LessOrEquqals = 6
+
+class IfElifElseFunctions(Enum):
+	_if = "if"
+	_elif = "elif"
+	_else = "else"
+
+	def _Has_Value_(self, element: str) -> bool:
+		return element in self._value2member_map_
 
 class BranchFlagParameters(Enum):
 	CarryOut = "co"

@@ -78,7 +78,7 @@ regs = [
 
 #RAM emulated through huge list
 ramv = [
-	bz for i in range(1024)	#Random Access Memory, emulated 1024, but is capable of 4.294.967.296
+	bz for i in range(16384)	#Random Access Memory, emulated 1024, but is capable of 4.294.967.296
 ]
 
 #Classes for enums for elimination of magic numbers
