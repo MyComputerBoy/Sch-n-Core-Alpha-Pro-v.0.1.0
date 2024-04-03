@@ -454,15 +454,22 @@ FunctionParameters = {
 		],
 	},
 	"ALU": [
-		
+		GenericFunctionVariableTypes.RegisterType,
+		GenericFunctionVariableTypes.Number,
+		GenericFunctionVariableTypes.IndexFromCustomList,
+		GenericFunctionVariableTypes.RegisterType,
+		GenericFunctionVariableTypes.Number,
+		GenericFunctionVariableTypes.RegisterType,
+		GenericFunctionVariableTypes.Number,
+		GenericFunctionVariableTypes.EndOfVariables,
 	],
  
 }
 
-def ConvertVariablesToBinaries(Function: str, Variables: list):
+def ConvertVariablesToBinaries(Function: str, Variables: list) -> list:
     pass
 
-def GetTokens(Line: str):
+def GetTokens(Line: str) -> list:
 	
 	i = 0
 	char = ''
