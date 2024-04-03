@@ -168,7 +168,6 @@ class WorkingFile():
 
 				self.BranchMarks[str(self.IfStatementsEncountered)] = BranchEscapeLine
 				
-
 class BinaryInstructionInfo(Enum):
 	MainFunction = [0,4]
 	IsALU = [5,5]
@@ -381,6 +380,15 @@ class GenericFunctionParameterNames(Enum):
 				return True 
 		return False
 
+class GenericFunctionVariableTypes(Enum):
+    ToFrom = 0
+    StartEndIndicator = 1
+    RegisterType = 2
+    Number = 3
+    IndexFromCustomList = 4
+    Copy = 5
+    EndOfVariables = 6
+
 FunctionIndecies = [
 	"rom",
 	"ram",
@@ -391,6 +399,68 @@ FunctionIndecies = [
 	"call_subroutine",
 	"generel_io",
 ]
+
+FunctionParameters = {
+	
+	"Branch": [
+		
+	],
+	"Standard": {
+		StandardFunctions.rom: [
+			GenericFunctionVariableTypes.RegisterType,
+			GenericFunctionVariableTypes.Number,
+			GenericFunctionVariableTypes.IndexFromCustomList,
+			GenericFunctionVariableTypes.EndOfVariables,
+		],
+		StandardFunctions.ram: [
+			GenericFunctionVariableTypes.ToFrom,
+			GenericFunctionVariableTypes.Number,
+			GenericFunctionVariableTypes.RegisterType,
+			GenericFunctionVariableTypes.Number,
+			GenericFunctionVariableTypes.EndOfVariables,
+		],
+		StandardFunctions.register: [
+			GenericFunctionVariableTypes.RegisterType,
+			GenericFunctionVariableTypes.Number,
+			GenericFunctionVariableTypes.IndexFromCustomList,
+			GenericFunctionVariableTypes.name,
+			GenericFunctionVariableTypes.Number,
+			GenericFunctionVariableTypes.EndOfVariables,
+		],
+		StandardFunctions.stack: [
+			GenericFunctionVariableTypes.IndexFromCustomList,
+			GenericFunctionVariableTypes.RegisterType,
+			GenericFunctionVariableTypes.Number,
+			GenericFunctionVariableTypes.IndexFromCustomList,
+			GenericFunctionVariableTypes.EndOfVariables,
+		],
+		StandardFunctions.interrupt: [
+			GenericFunctionVariableTypes.RegisterType,
+			GenericFunctionVariableTypes.Number,
+			GenericFunctionVariableTypes.EndOfVariables,
+		],
+		StandardFunctions.general_io: [
+			GenericFunctionVariableTypes.ToFrom,
+			GenericFunctionVariableTypes.Number,
+			GenericFunctionVariableTypes.RegisterType,
+			GenericFunctionVariableTypes.Number,
+			GenericFunctionVariableTypes.EndOfVariables,
+		],
+		StandardFunctions.call_subroutine: [
+			GenericFunctionVariableTypes.Number,
+			GenericFunctionVariableTypes.ToFrom,
+			GenericFunctionVariableTypes.Number,
+			GenericFunctionVariableTypes.EndOfVariables,
+		],
+	},
+	"ALU": [
+		
+	],
+ 
+}
+
+def ConvertVariablesToBinaries(Function: str, Variables: list):
+    pass
 
 def GetTokens(Line: str):
 	
