@@ -18,6 +18,7 @@ import math
 import BasicMath as bm
 import logging as lgn			#Logging for custom exceptions
 from enum import Enum			#Enum for elimination of magic numbers
+from typing import Union
 
 #Initiating logging
 LOGLEVEL = lgn.DEBUG
@@ -180,7 +181,7 @@ class BinaryInstructionInfo(Enum):
 class BranchNames(Enum):
 	Branch = "branch"
 
-	def _Has_Value_(self, element: str) -> bool:
+	def __Has_Value__(self, element: str) -> bool:
 		return element in self._value2member_map_
 
 class BranchVariables(Enum):
@@ -195,7 +196,7 @@ class BranchConditionalComparisonParameters(Enum):
 	NotEquals = "!="
 	LessOrEquqals = "<="
 
-	def _Has_Value_(self, element: str) -> bool:
+	def __Has_Value__(self, element: str) -> bool:
 		return element in self._value2member_map_
 
 class BranchConditionalIndecies(Enum):
@@ -211,7 +212,7 @@ class IfElifElseFunctions(Enum):
 	_elif = "elif"
 	_else = "else"
 
-	def _Has_Value_(self, element: str) -> bool:
+	def __Has_Value__(self, element: str) -> bool:
 		return element in self._value2member_map_
 
 class BranchFlagParameters(Enum):
@@ -219,7 +220,7 @@ class BranchFlagParameters(Enum):
 	IsZero = "iz"
 	OverFlow = "of"
 
-	def _Has_Value_(self, element: str) -> bool:
+	def __Has_Value__(self, element: str) -> bool:
 		return element in self._value2member_map_
 
 class StandardFunctions(Enum):
@@ -231,13 +232,13 @@ class StandardFunctions(Enum):
 	general_io = "io"
 	call_subroutine = "call"
 
-	def _Has_Value_(self, element: str) -> bool:
+	def __Has_Value__(self, element: str) -> bool:
 		return element in self._value2member_map_
 
 class ALUFunctions(Enum):
 	alu_function = "compute"
-	
-	def _Has_Value_(self, element: str) -> bool:
+
+	def __Has_Value__(self, element: str) -> bool:
 		return element in self._value2member_map_
 
 class AbstractFunctions(Enum):
@@ -246,8 +247,7 @@ class AbstractFunctions(Enum):
 	_elif = "elif"
 	_pass = "pass"
 	_def = "def"
-	
-	def _Has_Value_(self, element: str) -> bool:
+	def __Has_Value__(self, element: str) -> bool:
 		return element in self._value2member_map_
 
 class SpecialCaseFunctions(Enum):
@@ -255,8 +255,8 @@ class SpecialCaseFunctions(Enum):
 	EndBrace = "}"
 	DefineFunction = "def"
 	EndOfFileIndicator = "eof"
-	
-	def _Has_Value_(self, element: str) -> bool:
+
+	def __Has_Value__(self, element: str) -> bool:
 		return element in self._value2member_map_
 
 class VariableTypes(Enum):
@@ -267,8 +267,8 @@ class VariableTypes(Enum):
 	Boolean = "bool"
 	Array = "array"
 	List = "list"
-	
-	def _Has_Value_(self, element: str) -> bool:
+
+	def __Has_Value__(self, element: str) -> bool:
 		return element in self._value2member_map_
 
 class FunctionNames(Enum):
@@ -279,22 +279,29 @@ class FunctionNames(Enum):
 	SpecialCase = SpecialCaseFunctions
 	VariableDeclarationFunctions = VariableTypes
 
-	def _Has_Value_(self, element: str) -> bool:
-		for element in self._value2member_map_:
-			if element._Has_Value_(element):
+	def _value2member_list_map_(self):
+		ValueMemberList = []
+		TemporaryValue2MemberList = list(self._value2member_map_.values())
+		for class_element in TemporaryValue2MemberList:
+			ValueMemberList.append(class_element.value)
+		return ValueMemberList
+
+	def __Has_Value__(self, element: str) -> bool:
+		for class_element in self._value2member_list_map_():
+			if class_element.__Has_Value__(element):
 				return True 
 		return False
 
 	def _Indexed_Has_Value_(self, element: str) -> list:
-		for index, element in enumerate(self._value2member_map_):
-			if element._Has_Value_(element):
+		for index, class_element in enumerate(self._value2member_list_map_()):
+			if class_element.__Has_Value__(element):
 				return [True, index]
 		return [False, -1]
 
 	def _Has_Value_To_Element_(self, element_test: int):
-		for _, element in enumerate(self._value2member_map_):
-			if element._Has_Value_(element_test):
-				return [True, element]
+		for _, class_element in enumerate(self._value2member_list_map_()):
+			if class_element.__Has_Value__(element_test):
+				return [True, class_element]
 		return [False, -1]
 
 class TokenTypes(Enum):
@@ -333,22 +340,22 @@ class InscapeEscapeTypes(Enum):
 	Wrapper = WrapperInscapeEscapes
 	Mathematical = MathematicalInscapeEscape
 
-	def _Has_Value_(self, element: str) -> bool:
+	def __Has_Value__(self, element: str) -> bool:
 		return element in self._value2member_map_
 	
-	def IsInscape(self, element: str, ScapeType) -> bool:
+	def IsInscape(self, element: str, ScapeType):
 		if ScapeType == InscapeEscapeTypes.Wrapper:
-			return WrapperInscapeEscapes.IsInscape(element)
+			return WrapperInscapeEscapes.IsInscape(element) # type: ignore
 		elif ScapeType == InscapeEscapeTypes.Mathematical:
-			return MathematicalInscapeEscape.IsInscape(element)
+			return MathematicalInscapeEscape.IsInscape(element) # type: ignore
 		else:
 			return TypeError
 	
-	def IsEscape(self, element: str, ScapeType) -> bool:
+	def IsEscape(self, element: str, ScapeType):
 		if ScapeType == InscapeEscapeTypes.Wrapper:
-			return WrapperInscapeEscapes.IsEscape(element)
+			return WrapperInscapeEscapes.IsEscape(element) # type: ignore
 		elif ScapeType == InscapeEscapeTypes.Mathematical:
-			return MathematicalInscapeEscape.IsEscape(element)
+			return MathematicalInscapeEscape.IsEscape(element) # type: ignore
 		else:
 			return TypeError
 
@@ -364,21 +371,21 @@ class RegisterNames(Enum):
 	Stack = "stk"
 	SpecialPurpose = "spr"
     
-	def _Has_Value_(self, element: str) -> bool:
+	def __Has_Value__(self, element: str) -> bool:
 		return element in self._value2member_map_
 
 class InscapeEscapeNames(Enum):
 	Inscape = "{"
 	Escape = "}"
 	
-	def _Has_Value_(self, element: str) -> bool:
+	def __Has_Value__(self, element: str) -> bool:
 		return element in self._value2member_map_
 
 class ToFromNames(Enum):
 	To = "to"
 	From = "from"
 	
-	def _Has_Value_(self, element: str) -> bool:
+	def __Has_Value__(self, element: str) -> bool:
 		return element in self._value2member_map_
 
 class GenericFunctionParameterNames(Enum):
@@ -386,9 +393,16 @@ class GenericFunctionParameterNames(Enum):
 	InscapeEscapes = InscapeEscapeNames
 	ToFroms = ToFromNames
 
-	def _Has_Value_(self, element: str) -> bool:
-		for element in self._value2member_map_:
-			if element._Has_Value_(element):
+	def _value2member_list_map_(self):
+		ValueMemberList = []
+		TemporaryValue2MemberList = list(self._value2member_map_.values())
+		for class_element in TemporaryValue2MemberList:
+			ValueMemberList.append(class_element.value)
+		return ValueMemberList
+
+	def __Has_Value__(self, element: str) -> bool:
+		for class_element in self._value2member_list_map_():
+			if class_element.__Has_Value__(element):
 				return True 
 		return False
 
@@ -480,23 +494,41 @@ FunctionParameters = {
 
 def GetMainTypeAndIndeciesFromTokens(Function: str, Variables: list):
     
-	HasValue, FunctionElement = FunctionNames._Has_Value_To_Element_(Function)
+	HasValue, FunctionIndex = FunctionNames._Indexed_Has_Value_(Function) # type: ignore
     
 	if not HasValue:	
 		raise NameError
     
-	if FunctionElement == FunctionNames.Branch:
-		pass
-	elif FunctionElement == FunctionNames.Standard:
-		pass
-	elif FunctionElement == FunctionNames.ALU:
-		pass
-	elif FunctionElement == FunctionNames.Abstract:
-		pass
-	elif FunctionElement == FunctionNames.SpecialCase:
-		pass
-	elif FunctionElement == FunctionNames.VariableDeclarationFunctions:
-		pass
+	for variable_index, variable_type in enumerate(FunctionParameters[FunctionIndex]):
+		if variable_type == GenericFunctionVariableTypes.ToFrom:
+			pass
+		elif variable_type == GenericFunctionVariableTypes.StartEndIndicator:
+			pass
+		elif variable_type == GenericFunctionVariableTypes.RegisterType:
+			pass
+		elif variable_type == GenericFunctionVariableTypes.Number:
+			pass
+		elif variable_type == GenericFunctionVariableTypes.IndexFromCustomList:
+			pass
+		elif variable_type == GenericFunctionVariableTypes.Copy:
+			pass
+		elif variable_type == GenericFunctionVariableTypes.EndOfVariables:
+			break
+		else:
+			raise TypeError
+    
+	# if FunctionElement == FunctionNames.Branch:
+	# 	pass
+	# elif FunctionElement == FunctionNames.Standard:
+	# 	pass
+	# elif FunctionElement == FunctionNames.ALU:
+	# 	pass
+	# elif FunctionElement == FunctionNames.Abstract:
+	# 	pass
+	# elif FunctionElement == FunctionNames.SpecialCase:
+	# 	pass
+	# elif FunctionElement == FunctionNames.VariableDeclarationFunctions:
+	# 	pass
 
 def ConvertVariablesToBinaries(Function: str, Variables: list):
     pass
