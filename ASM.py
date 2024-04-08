@@ -285,6 +285,18 @@ class FunctionNames(Enum):
 				return True 
 		return False
 
+	def _Indexed_Has_Value_(self, element: str) -> list:
+		for index, element in enumerate(self._value2member_map_):
+			if element._Has_Value_(element):
+				return [True, index]
+		return [False, -1]
+
+	def _Has_Value_To_Element_(self, element_test: int):
+		for _, element in enumerate(self._value2member_map_):
+			if element._Has_Value_(element_test):
+				return [True, element]
+		return [False, -1]
+
 class TokenTypes(Enum):
 	String = 0
 	Char = 1
@@ -466,7 +478,27 @@ FunctionParameters = {
  
 }
 
-def ConvertVariablesToBinaries(Function: str, Variables: list) -> list:
+def GetMainTypeAndIndeciesFromTokens(Function: str, Variables: list):
+    
+	HasValue, FunctionElement = FunctionNames._Has_Value_To_Element_(Function)
+    
+	if not HasValue:	
+		raise NameError
+    
+	if FunctionElement == FunctionNames.Branch:
+		pass
+	elif FunctionElement == FunctionNames.Standard:
+		pass
+	elif FunctionElement == FunctionNames.ALU:
+		pass
+	elif FunctionElement == FunctionNames.Abstract:
+		pass
+	elif FunctionElement == FunctionNames.SpecialCase:
+		pass
+	elif FunctionElement == FunctionNames.VariableDeclarationFunctions:
+		pass
+
+def ConvertVariablesToBinaries(Function: str, Variables: list):
     pass
 
 def GetTokens(Line: str) -> list:
