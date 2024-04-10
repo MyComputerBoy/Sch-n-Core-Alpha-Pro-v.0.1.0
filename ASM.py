@@ -18,7 +18,7 @@ import math
 import BasicMath as bm
 import logging as lgn			#Logging for custom exceptions
 from enum import Enum			#Enum for elimination of magic numbers
-from typing import Union
+from typing import Optional
 
 #Initiating logging
 LOGLEVEL = lgn.DEBUG
@@ -41,76 +41,85 @@ class RunningStates(Enum):
 
 class WorkingFile():
 
-	#Constants
-	_VersionName_: str = "Schön Core Alpha v.0.1.0" #Keep constant!	
-	_ImportExtension_: str = ".s1"                  #Keep constant!
-	_AssembledExtension_: str = ".schonexe1"        #Keep constant!	
-	
-	#Path of working file
-	ImportedFileName: str = None
-	AssembledFileName: str = None
-	
-	#Different files to work with
-	RawFile: list = None
-	MetaInfoAssembling: list = None
-	MainAssembling: list = None	
-	
-	#Basic information about current work in progress file
-	WorkingLineNumber: int = 0
-	WorkingBinaryLineNumber: int = 0
-	IfStatementsEncountered: int = 0
-	EndOfFileLineNumber: int = 0
+	def __init__(self):			#Bts __init__()
+		#Constants
+		self._VersionName_: str = "Schön Core Alpha v.0.1.0" #Keep constant!	
+		self._ImportExtension_: str = ".s1"                  #Keep constant!
+		self._AssembledExtension_: str = ".schonexe1"        #Keep constant!	
+		
+		#Path of working file
+		# self.ImportedFileName: Optional[str] = None
+		# self.AssembledFileName: Optional[str] = None
+		
+		# #Different files to work with
+		# self.RawFile: Optional[list[str]] = None
+		# self.MetaInfoAssembling: Optional[list[str]] = None
+		# self.MainAssembling: Optional[list[str]] = None	
+		
+		#Basic information about current work in progress file
+		self.WorkingLineNumber: int = 0
+		self.WorkingBinaryLineNumber: list[int] = []
+		self.IfStatementsEncountered: int = 0
+		self.EndOfFileLineNumber: int = 0
 
-	#Meta information about working file
-	BranchMarks: list = None
-	Marks: list = None
-	UserFunctions: list = None
+		#Meta information about working file
+		self.BranchMarks: dict = {}
+		self.Marks: dict = {}
+		self.UserFunctions: dict = {}
 
-	#Assembling information
-	AssemblingBinaryLine = None
-	AssemblingBinaryNextLine = None
+		#Assembling information
+		self.AssemblingBinaryLine: list = []
+		self.AssemblingBinaryNextLine: list = []
 
-	#State of assembling
-	RunningState = RunningStates.Initializing
+		#State of assembling
+		self.RunningState = RunningStates.Initializing
 
-	def WorkingFile(self) -> None:                  #Initialize clas		
-		self.RawFile = []
-		self.MetaInfoAssembling = []
-		self.MainAssembling = []
-		self.BranchMarks = []
-		self.Marks = {}
-		self.UserFunctions = []
-		self.FunctionNames = []	
-		self.AssemblingBinaryLine = [bm.dtb(0)]
-		self.AssemblingBinaryNextLine = []
-
+	def WorkingFile(self) -> None:                  #Properly initialize class
 		lgn.debug("WorkingFile: Initialized Workingfile class.")
 
 	def ImportFile(self, filename: str, DestinationName: str) -> None:
 
-		self.ImportedFileName = filename	
+		#Different files to work with
+		if self.RawFile is None:
+			self.RawFile: list[str] = []
+		if self.MetaInfoAssembling is None:
+			self.MetaInfoAssembling: list[str] = []
+		if self.MainAssembling is None:
+			self.MainAssembling: list[str] = []	
+
 		#Open and read file to assemble
 		FileHandler = open(bf + pf + self.ImportedFileName)
 		self.RawLines = FileHandler.readlines()
 		FileHandler.close()
 
-		self.AssembledFileName = DestinationName
+		#Path of working file
+		self.ImportedFileName: str = filename
+		self.AssembledFileName: str = DestinationName
+
 
 		lgn.debug("ImportFile: Imported file %s." % (bf + pf + self.ImportedFileName))
 	
 	def IncrementGetLine(self) -> str:
 		try:
-			q: str = self.RawFile[self.WorkingLineNumber]
+			if type(self.RawFile) is type(None):
+				lgn.critical("WorkingFile.IncrementGetLine(): Error: File not imported! Import file to get line.")
+				raise ImportError
+			q: Optional[str] = self.RawFile[self.WorkingLineNumber] # type: ignore
 		except IndexError:
-			return -1
+			lgn.debug("WorkingFile.IncrementGetLine(): Out of range of imported file.")
+			raise IndexError
 		self.WorkingLineNumber += 1
 		return q
 
 	def TryGetNextLine(self) -> str:
 		try:
-			q: str = self.RawFile[self.WorkingFile + 1]
+			if type(self.RawFile) is type(None):
+				lgn.debug("WorkingFile.TryGetNextLine(): Error: File not imported! Import file to get line.")
+				raise ImportError
+			q: str = self.RawFile[self.WorkingLineNumber + 1] # type: ignore
 		except IndexError:
-			return None
+			lgn.debug("WorkingFile.TryGetNextLine(): Out of range of imported file.")
+			raise IndexError
 		return q
  
 	def GetMetaInfo(self) -> None:
@@ -118,17 +127,20 @@ class WorkingFile():
 		_worker_file = WorkingFile()
 		
 		_worker_file.WorkingFile()
-		_worker_file.ImportFile(self.ImportedFileName, self.AssembledFileName)
+		_worker_file.ImportFile(self.ImportedFileName, self.AssembledFileName) # type: ignore
 		
 		_worker_file.RunningState = RunningStates.Running
 		
 		while _worker_file.RunningState == RunningStates.Running:
 			
 			#Handle line
-			Line = _worker_file.IncrementGetLine()
-			if Line == -1:
+			try:
+				Line = _worker_file.IncrementGetLine()
+			except IndexError:
 				_worker_file.RunningState = RunningStates.ExitNoError
 				break
+			except ImportError:
+				_worker_file.RunningState = RunningStates.ExitWithErrorMessage
 			
 			NextLine = _worker_file.TryGetNextLine()
 
@@ -141,8 +153,8 @@ class WorkingFile():
 			NextLineFunction = NextLineTokens.pop(0)
 
 			if Function == AbstractFunctions._def.value:
-				self.FunctionNames[str(MetaName)] = _worker_file.WorkingLineNumber
-			elif FunctionNames._Has_Value_(Function):
+				self.UserFunctions[str(MetaName)] = _worker_file.WorkingLineNumber
+			elif FunctionNames.__Has_Value__(Function): # type: ignore
 				if Function == AbstractFunctions.mark.value:
 					self.Marks[str(MetaName)] = _worker_file.WorkingFile
 			elif (Function == BranchNames.Branch.value and
@@ -154,10 +166,10 @@ class WorkingFile():
 				self.WorkingLineNumber += 1
 
 				BranchEscapeLine, BranchEscapeIndex = GetEscapeFromInscape(
-        			self.WorkingLineNumber, 1, InscapeEscapeTypes.Wrapper)
+        			self.WorkingLineNumber, 1, InscapeEscapeTypes.Wrapper) # type: ignore
 
-				self.BranchMarks[str(self.IfStatementsEncountered)] = BranchEscapeLine
-			elif IfElifElseFunctions._Has_Value_(Function):
+				self.BranchMarks[str(self.IfStatementsEncountered)] = BranchEscapeLine # type: ignore
+			elif IfElifElseFunctions.__Has_Value__(Function): # type: ignore
 				
 				if Function == IfElifElseFunctions._if:
 					self.IfStatementsEncountered += 1
@@ -165,7 +177,7 @@ class WorkingFile():
 				self.WorkingLineNumber += 1
     
 				BranchEscapeLine, BranchEscapeIndex = GetEscapeFromInscape(
-        			self.WorkingLineNumber, 1, InscapeEscapeTypes.Wrapper)
+        			self.WorkingLineNumber, 1, InscapeEscapeTypes.Wrapper) # type: ignore
 
 				self.BranchMarks[str(self.IfStatementsEncountered)] = BranchEscapeLine
 				
@@ -370,6 +382,13 @@ class RegisterNames(Enum):
 	ArithmeticLogic = "alur"
 	Stack = "stk"
 	SpecialPurpose = "spr"
+
+	def _value2member_list_map_(self):
+		ValueMemberList = []
+		TemporaryValue2MemberList = list(self._value2member_map_.values())
+		for class_element in TemporaryValue2MemberList:
+			ValueMemberList.append(class_element.value)
+		return ValueMemberList
     
 	def __Has_Value__(self, element: str) -> bool:
 		return element in self._value2member_map_
@@ -377,6 +396,13 @@ class RegisterNames(Enum):
 class InscapeEscapeNames(Enum):
 	Inscape = "{"
 	Escape = "}"
+
+	def _value2member_list_map_(self):
+		ValueMemberList = []
+		TemporaryValue2MemberList = list(self._value2member_map_.values())
+		for class_element in TemporaryValue2MemberList:
+			ValueMemberList.append(class_element.value)
+		return ValueMemberList
 	
 	def __Has_Value__(self, element: str) -> bool:
 		return element in self._value2member_map_
@@ -384,6 +410,13 @@ class InscapeEscapeNames(Enum):
 class ToFromNames(Enum):
 	To = "to"
 	From = "from"
+
+	def _value2member_list_map_(self):
+		ValueMemberList = []
+		TemporaryValue2MemberList = list(self._value2member_map_.values())
+		for class_element in TemporaryValue2MemberList:
+			ValueMemberList.append(class_element.value)
+		return ValueMemberList
 	
 	def __Has_Value__(self, element: str) -> bool:
 		return element in self._value2member_map_
@@ -399,6 +432,13 @@ class GenericFunctionParameterNames(Enum):
 		for class_element in TemporaryValue2MemberList:
 			ValueMemberList.append(class_element.value)
 		return ValueMemberList
+
+	def _Indexed_Has_Value_(self, element):
+		for class_element in self._value2member_list_map_():
+			if class_element.__Has_Value__(element):
+				class_element_list = class_element._value2member_list_map_()
+				return [True, class_element, class_element_list.index(element)]
+		return [False, -1, -1]
 
 	def __Has_Value__(self, element: str) -> bool:
 		for class_element in self._value2member_list_map_():
@@ -494,12 +534,12 @@ FunctionParameters = {
 
 def GetMainTypeAndIndeciesFromTokens(Function: str, Variables: list):
     
-	HasValue, FunctionIndex = FunctionNames._Indexed_Has_Value_(Function) # type: ignore
+	HasValue, MainFunctionIndex = FunctionNames._Indexed_Has_Value_(Function) # type: ignore
     
 	if not HasValue:	
 		raise NameError
     
-	for variable_index, variable_type in enumerate(FunctionParameters[FunctionIndex]):
+	for variable_index, variable_type in enumerate(FunctionParameters[MainFunctionIndex]):
 		if variable_type == GenericFunctionVariableTypes.ToFrom:
 			pass
 		elif variable_type == GenericFunctionVariableTypes.StartEndIndicator:
@@ -516,19 +556,6 @@ def GetMainTypeAndIndeciesFromTokens(Function: str, Variables: list):
 			break
 		else:
 			raise TypeError
-    
-	# if FunctionElement == FunctionNames.Branch:
-	# 	pass
-	# elif FunctionElement == FunctionNames.Standard:
-	# 	pass
-	# elif FunctionElement == FunctionNames.ALU:
-	# 	pass
-	# elif FunctionElement == FunctionNames.Abstract:
-	# 	pass
-	# elif FunctionElement == FunctionNames.SpecialCase:
-	# 	pass
-	# elif FunctionElement == FunctionNames.VariableDeclarationFunctions:
-	# 	pass
 
 def ConvertVariablesToBinaries(Function: str, Variables: list):
     pass
@@ -582,7 +609,7 @@ def GetTokens(Line: str) -> list:
 
 	return tokens
 
-def GetEscapeFromInscape(Lines: list, InscapeLine: int, InscapeIndex: int, InscapeType: InscapeEscapeTypes) -> list | InscapeEscapeExits:
+def GetEscapeFromInscape(Lines: list, InscapeLine: int, InscapeIndex: int, InscapeType: InscapeEscapeTypes) -> list:
 	GetEscapeState = RunningStates.Running
 
 	LineNumber = InscapeLine
@@ -594,20 +621,20 @@ def GetEscapeFromInscape(Lines: list, InscapeLine: int, InscapeIndex: int, Insca
 		try:
 			line = Lines[LineNumber]
 		except IndexError:
-			return InscapeEscapeExits.EscapeNotFound
+			return [InscapeEscapeExits.EscapeNotFound]
 		
 		while LineIndex < len(line):
 			char = line[LineIndex]
-			if InscapeEscapeTypes.IsInscape(char, InscapeType):
+			if InscapeEscapeTypes.IsInscape(char, InscapeType): # type: ignore
 				Inscapes += 1
-			elif InscapeEscapeTypes.IsEscape(char, InscapeType) and Inscapes > 0:
+			elif InscapeEscapeTypes.IsEscape(char, InscapeType) and Inscapes > 0: # type: ignore
 				Inscapes -= 1
-			elif InscapeEscapeTypes.IsEscape(char, InscapeType) and Inscapes == 0:
-				return LineNumber, LineIndex
+			elif InscapeEscapeTypes.IsEscape(char, InscapeType) and Inscapes == 0: # type: ignore
+				return [LineNumber, LineIndex]
 			LineIndex += 1
 		LineNumber += 1
 	
-	return InscapeEscapeExits.EscapeNotFound
+	return [InscapeEscapeExits.EscapeNotFound]
 
 def GetInscapeOnLine(Lines: list, InscapeLine: int, InscapeType: InscapeEscapeTypes):
 	GetInscapeState = RunningStates.Running
@@ -625,13 +652,13 @@ def GetInscapeOnLine(Lines: list, InscapeLine: int, InscapeType: InscapeEscapeTy
 
 		while LineIndex < len(line):
 			char = line[LineIndex]
-			if InscapeEscapeTypes.IsInscape(char, InscapeType):
+			if InscapeEscapeTypes.IsInscape(char, InscapeType): # type: ignore
 				return LineNumber, LineIndex
 			LineIndex += 1
 		return InscapeEscapeExits.InscapeNotFound
 	return InscapeEscapeExits.UnknownError
 
-def Main(ImportFilename: str, DestinationName: str) -> None:
+def Main(ImportFilename: str, DestinationName: str) -> RunningStates | list[str]:
 	"""ASM.Main(ImportFilename: str, DestinationName: str) -> Main assembler
 	"""
 
@@ -671,15 +698,15 @@ def Main(ImportFilename: str, DestinationName: str) -> None:
 			ExpectHandlingFunctionNumber = True
 
 		#Handle functions
-		if (FunctionNames._Has_Value_(Function) == False and 
-	  		Function in worker_file.FunctionNames):
+		if (FunctionNames.__Has_Value__(Function) == False and # type: ignore
+	  		Function in worker_file.UserFunctions):
 			pass
-		elif (FunctionNames._Has_Value_(Function) == False and 
+		elif (FunctionNames.__Has_Value__(Function) == False and # type: ignore
 			Function in worker_file.Marks):
 			pass
-		elif FunctionNames._Has_Value_(Function) == False:
+		elif FunctionNames.__Has_Value__(Function) == False: # type: ignore
 			pass
-		elif BranchNames._Has_Value_(Function):
+		elif BranchNames.__Has_Value__(Function): # type: ignore
 			UsingImmediate = True
 			ExpectComparison = False
 			
@@ -697,7 +724,7 @@ def Main(ImportFilename: str, DestinationName: str) -> None:
 
 			if ExpectComparison:
 				pass
-		elif StandardFunctions._Has_Value_(Function):
+		elif StandardFunctions.__Has_Value__(Function): # type: ignore
 			if Function == StandardFunctions.rom.value:
 				pass
 			elif Function == StandardFunctions.ram.value:
@@ -714,13 +741,13 @@ def Main(ImportFilename: str, DestinationName: str) -> None:
 				pass
 			elif Function == StandardFunctions.call_subroutine.value:
 				pass
-		elif ALUFunctions._Has_Value_(Function):
+		elif ALUFunctions.__Has_Value__(Function): # type: ignore
 			pass
-		elif AbstractFunctions._Has_Value_(Function):
+		elif AbstractFunctions.__Has_Value__(Function): # type: ignore
 			pass
-		elif SpecialCaseFunctions._Has_Value_(Function):
+		elif SpecialCaseFunctions.__Has_Value__(Function): # type: ignore
 			pass
-		elif VariableTypes._Has_Value_(Function):
+		elif VariableTypes.__Has_Value__(Function): # type: ignore
 			pass
 		else:
 			worker_file.RunningState = RunningStates.ExitUnknownFunction
