@@ -19,6 +19,7 @@ import BasicMath as bm
 import logging as lgn			#Logging for custom exceptions
 from enum import Enum			#Enum for elimination of magic numbers
 from typing import Optional
+from typing import Self
 
 #Initiating logging
 LOGLEVEL = lgn.DEBUG
@@ -45,16 +46,7 @@ class WorkingFile():
 		#Constants
 		self._VersionName_: str = "Schön Core Alpha v.0.1.0" #Keep constant!	
 		self._ImportExtension_: str = ".s1"                  #Keep constant!
-		self._AssembledExtension_: str = ".schonexe1"        #Keep constant!	
-		
-		#Path of working file
-		# self.ImportedFileName: Optional[str] = None
-		# self.AssembledFileName: Optional[str] = None
-		
-		# #Different files to work with
-		# self.RawFile: Optional[list[str]] = None
-		# self.MetaInfoAssembling: Optional[list[str]] = None
-		# self.MainAssembling: Optional[list[str]] = None	
+		self._AssembledExtension_: str = ".schonexe1"        #Keep constant!
 		
 		#Basic information about current work in progress file
 		self.WorkingLineNumber: int = 0
@@ -104,7 +96,7 @@ class WorkingFile():
 			if type(self.RawFile) is type(None):
 				lgn.critical("WorkingFile.IncrementGetLine(): Error: File not imported! Import file to get line.")
 				raise ImportError
-			q: Optional[str] = self.RawFile[self.WorkingLineNumber] # type: ignore
+			q: Optional[str] = self.RawFile[self.WorkingLineNumber]
 		except IndexError:
 			lgn.debug("WorkingFile.IncrementGetLine(): Out of range of imported file.")
 			raise IndexError
@@ -116,7 +108,7 @@ class WorkingFile():
 			if type(self.RawFile) is type(None):
 				lgn.debug("WorkingFile.TryGetNextLine(): Error: File not imported! Import file to get line.")
 				raise ImportError
-			q: str = self.RawFile[self.WorkingLineNumber + 1] # type: ignore
+			q: str = self.RawFile[self.WorkingLineNumber + 1]
 		except IndexError:
 			lgn.debug("WorkingFile.TryGetNextLine(): Out of range of imported file.")
 			raise IndexError
@@ -127,7 +119,7 @@ class WorkingFile():
 		_worker_file = WorkingFile()
 		
 		_worker_file.WorkingFile()
-		_worker_file.ImportFile(self.ImportedFileName, self.AssembledFileName) # type: ignore
+		_worker_file.ImportFile(self.ImportedFileName, self.AssembledFileName)
 		
 		_worker_file.RunningState = RunningStates.Running
 		
@@ -154,7 +146,7 @@ class WorkingFile():
 
 			if Function == AbstractFunctions._def.value:
 				self.UserFunctions[str(MetaName)] = _worker_file.WorkingLineNumber
-			elif FunctionNames.__Has_Value__(Function): # type: ignore
+			elif FunctionNames.__Has_Value__(FunctionNames.self, Function):
 				if Function == AbstractFunctions.mark.value:
 					self.Marks[str(MetaName)] = _worker_file.WorkingFile
 			elif (Function == BranchNames.Branch.value and
@@ -166,10 +158,10 @@ class WorkingFile():
 				self.WorkingLineNumber += 1
 
 				BranchEscapeLine, BranchEscapeIndex = GetEscapeFromInscape(
-        			self.WorkingLineNumber, 1, InscapeEscapeTypes.Wrapper) # type: ignore
+					self.RawLines, self.WorkingLineNumber, 1, InscapeEscapeTypes.Wrapper)
 
-				self.BranchMarks[str(self.IfStatementsEncountered)] = BranchEscapeLine # type: ignore
-			elif IfElifElseFunctions.__Has_Value__(Function): # type: ignore
+				self.BranchMarks[str(self.IfStatementsEncountered)] = BranchEscapeLine
+			elif IfElifElseFunctions.__Has_Value__(IfElifElseFunctions.self, Function):
 				
 				if Function == IfElifElseFunctions._if:
 					self.IfStatementsEncountered += 1
@@ -177,7 +169,7 @@ class WorkingFile():
 				self.WorkingLineNumber += 1
     
 				BranchEscapeLine, BranchEscapeIndex = GetEscapeFromInscape(
-        			self.WorkingLineNumber, 1, InscapeEscapeTypes.Wrapper) # type: ignore
+        			self.RawLines, self.WorkingLineNumber, 1, InscapeEscapeTypes.Wrapper)
 
 				self.BranchMarks[str(self.IfStatementsEncountered)] = BranchEscapeLine
 				
@@ -191,6 +183,7 @@ class BinaryInstructionInfo(Enum):
 	RegisterC = [25,32]
 
 class BranchNames(Enum):
+	self = Self
 	Branch = "branch"
 
 	def __Has_Value__(self, element: str) -> bool:
@@ -220,6 +213,7 @@ class BranchConditionalIndecies(Enum):
 	LessOrEquqals = 6
 
 class IfElifElseFunctions(Enum):
+	self = Self
 	_if = "if"
 	_elif = "elif"
 	_else = "else"
@@ -228,6 +222,7 @@ class IfElifElseFunctions(Enum):
 		return element in self._value2member_map_
 
 class BranchFlagParameters(Enum):
+	self = Self
 	CarryOut = "co"
 	IsZero = "iz"
 	OverFlow = "of"
@@ -236,6 +231,7 @@ class BranchFlagParameters(Enum):
 		return element in self._value2member_map_
 
 class StandardFunctions(Enum):
+	self = Self
 	rom = "rom"
 	ram = "ram"
 	register = "reg"
@@ -248,12 +244,14 @@ class StandardFunctions(Enum):
 		return element in self._value2member_map_
 
 class ALUFunctions(Enum):
+	self = Self
 	alu_function = "compute"
 
 	def __Has_Value__(self, element: str) -> bool:
 		return element in self._value2member_map_
 
 class AbstractFunctions(Enum):
+	self = Self
 	mark = "mark"
 	_else = "else"
 	_elif = "elif"
@@ -263,6 +261,7 @@ class AbstractFunctions(Enum):
 		return element in self._value2member_map_
 
 class SpecialCaseFunctions(Enum):
+	self = Self
 	StartBrace = "{"
 	EndBrace = "}"
 	DefineFunction = "def"
@@ -272,6 +271,7 @@ class SpecialCaseFunctions(Enum):
 		return element in self._value2member_map_
 
 class VariableTypes(Enum):
+	self = Self
 	Integer = "int"
 	FloatingPoint = "float"
 	Character = "char"
@@ -284,6 +284,7 @@ class VariableTypes(Enum):
 		return element in self._value2member_map_
 
 class FunctionNames(Enum):
+	self = Self
 	Branch = BranchNames
 	Standard = StandardFunctions
 	ALU = ALUFunctions
@@ -323,6 +324,7 @@ class TokenTypes(Enum):
 	Unknown = 3
 
 class WrapperInscapeEscapes(Enum):
+	self = Self
 	Inscape = "{"
 	Escape = "}"
 
@@ -336,6 +338,7 @@ class WrapperInscapeEscapes(Enum):
 		return element == WrapperInscapeEscapes.Escape.value
 
 class MathematicalInscapeEscape(Enum):
+	self = Self
 	Inscape = "("
 	Escape = ")"
 	
@@ -349,6 +352,7 @@ class MathematicalInscapeEscape(Enum):
 		return element == MathematicalInscapeEscape.Escape.value
 
 class InscapeEscapeTypes(Enum):
+	self = Self
 	Wrapper = WrapperInscapeEscapes
 	Mathematical = MathematicalInscapeEscape
 
@@ -357,17 +361,17 @@ class InscapeEscapeTypes(Enum):
 	
 	def IsInscape(self, element: str, ScapeType):
 		if ScapeType == InscapeEscapeTypes.Wrapper:
-			return WrapperInscapeEscapes.IsInscape(element) # type: ignore
+			return WrapperInscapeEscapes.IsInscape(WrapperInscapeEscapes.self, element)
 		elif ScapeType == InscapeEscapeTypes.Mathematical:
-			return MathematicalInscapeEscape.IsInscape(element) # type: ignore
+			return MathematicalInscapeEscape.IsInscape(MathematicalInscapeEscape.self, element)
 		else:
 			return TypeError
 	
 	def IsEscape(self, element: str, ScapeType):
 		if ScapeType == InscapeEscapeTypes.Wrapper:
-			return WrapperInscapeEscapes.IsEscape(element) # type: ignore
+			return WrapperInscapeEscapes.IsEscape(WrapperInscapeEscapes.self, element)
 		elif ScapeType == InscapeEscapeTypes.Mathematical:
-			return MathematicalInscapeEscape.IsEscape(element) # type: ignore
+			return MathematicalInscapeEscape.IsEscape(MathematicalInscapeEscape.self, element)
 		else:
 			return TypeError
 
@@ -532,9 +536,12 @@ FunctionParameters = {
  
 }
 
-def GetMainTypeAndIndeciesFromTokens(Function: str, Variables: list):
+def GetMainTypeAndBinaryVariablesFromTokens(Function: str, Variables: list):
     
-	HasValue, MainFunctionIndex = FunctionNames._Indexed_Has_Value_(Function) # type: ignore
+	HasValue, MainFunctionIndex = FunctionNames._Indexed_Has_Value_(FunctionNames.self, Function)
+    
+	binary_variables: list[list[int]] = []
+
     
 	if not HasValue:	
 		raise NameError
@@ -625,11 +632,11 @@ def GetEscapeFromInscape(Lines: list, InscapeLine: int, InscapeIndex: int, Insca
 		
 		while LineIndex < len(line):
 			char = line[LineIndex]
-			if InscapeEscapeTypes.IsInscape(char, InscapeType): # type: ignore
+			if InscapeEscapeTypes.IsInscape(InscapeEscapeTypes.self, char, InscapeType):
 				Inscapes += 1
-			elif InscapeEscapeTypes.IsEscape(char, InscapeType) and Inscapes > 0: # type: ignore
+			elif InscapeEscapeTypes.IsEscape(InscapeEscapeTypes.self, char, InscapeType) and Inscapes > 0:
 				Inscapes -= 1
-			elif InscapeEscapeTypes.IsEscape(char, InscapeType) and Inscapes == 0: # type: ignore
+			elif InscapeEscapeTypes.IsEscape(InscapeEscapeTypes.self, char, InscapeType) and Inscapes == 0:
 				return [LineNumber, LineIndex]
 			LineIndex += 1
 		LineNumber += 1
@@ -652,7 +659,7 @@ def GetInscapeOnLine(Lines: list, InscapeLine: int, InscapeType: InscapeEscapeTy
 
 		while LineIndex < len(line):
 			char = line[LineIndex]
-			if InscapeEscapeTypes.IsInscape(char, InscapeType): # type: ignore
+			if InscapeEscapeTypes.IsInscape(InscapeEscapeTypes.self, char, InscapeType):
 				return LineNumber, LineIndex
 			LineIndex += 1
 		return InscapeEscapeExits.InscapeNotFound
@@ -698,15 +705,15 @@ def Main(ImportFilename: str, DestinationName: str) -> RunningStates | list[str]
 			ExpectHandlingFunctionNumber = True
 
 		#Handle functions
-		if (FunctionNames.__Has_Value__(Function) == False and # type: ignore
+		if (FunctionNames.__Has_Value__(FunctionNames.self, element=Function) == False and
 	  		Function in worker_file.UserFunctions):
 			pass
-		elif (FunctionNames.__Has_Value__(Function) == False and # type: ignore
+		elif (FunctionNames.__Has_Value__(FunctionNames.self, Function) == False and
 			Function in worker_file.Marks):
 			pass
-		elif FunctionNames.__Has_Value__(Function) == False: # type: ignore
+		elif FunctionNames.__Has_Value__(FunctionNames.self, Function) == False:
 			pass
-		elif BranchNames.__Has_Value__(Function): # type: ignore
+		elif BranchNames.__Has_Value__(BranchNames.self, Function):
 			UsingImmediate = True
 			ExpectComparison = False
 			
@@ -724,7 +731,7 @@ def Main(ImportFilename: str, DestinationName: str) -> RunningStates | list[str]
 
 			if ExpectComparison:
 				pass
-		elif StandardFunctions.__Has_Value__(Function): # type: ignore
+		elif StandardFunctions.__Has_Value__(StandardFunctions.self, Function):
 			if Function == StandardFunctions.rom.value:
 				pass
 			elif Function == StandardFunctions.ram.value:
@@ -741,13 +748,13 @@ def Main(ImportFilename: str, DestinationName: str) -> RunningStates | list[str]
 				pass
 			elif Function == StandardFunctions.call_subroutine.value:
 				pass
-		elif ALUFunctions.__Has_Value__(Function): # type: ignore
+		elif ALUFunctions.__Has_Value__(ALUFunctions.self, Function):
 			pass
-		elif AbstractFunctions.__Has_Value__(Function): # type: ignore
+		elif AbstractFunctions.__Has_Value__(AbstractFunctions.self, Function):
 			pass
-		elif SpecialCaseFunctions.__Has_Value__(Function): # type: ignore
+		elif SpecialCaseFunctions.__Has_Value__(SpecialCaseFunctions.self, Function):
 			pass
-		elif VariableTypes.__Has_Value__(Function): # type: ignore
+		elif VariableTypes.__Has_Value__(VariableTypes.self, Function):
 			pass
 		else:
 			worker_file.RunningState = RunningStates.ExitUnknownFunction
