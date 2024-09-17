@@ -178,14 +178,14 @@ def bool_write(num_a, num_b, value):
 	return num_a
 
 #Bitwise reverse list
-def reverse( list ):
-	q = [0 for i in list]
-	for i, e in enumerate(list):
-		q[len(list)-i-1] = e
+def ReverseBinaryList(Input: list[bool]) -> list[bool]:
+	q = [0 for i in Input]
+	for i, e in enumerate(Input):
+		q[len(Input)-i-1] = e
 	return q
 
 #Binary list to string, format being either example: ■ ■■ , or 1011 or with spaces inbetween as in example: ■   ■ ■  , or 1 0 1 1 
-def blts( input_list, add_space=False, gui=False ):
+def BinaryListToString( input_list, add_space=False, gui=False ) -> str: #Binary list to string
 	q = ""
 	for i in input_list:
 		if gui:
@@ -202,20 +202,21 @@ def blts( input_list, add_space=False, gui=False ):
 	return q
 
 #Zero out binary input and set bit at index btd(list) to one
-def btib( list, len=bw ):
+def BinaryToIndexedBit( list, len=bw ) -> list[bool]: #Binary to indexed bit (set to one)
 	temp = btd( list )
 	q = [0 for i in range( len )]
 	q[temp] = 1
 	return q
 
-#Binary list to string in reverse to blts(list)
-def btbs( list ):
+#Binary list to string in reversed to blts(list)
+def BinaryToReversedString( list ) -> str: #Binary list to backwards string
 	q = ""
 	for i in list:
 		q = str( i ) + q
 	return q
 
-def bla(la, lb):
+#Binary Lists Append
+def BinaryListAppend(la: list[bool], lb: list[bool]) -> list[bool]: #Binary Lists Append
 	q = []
 	for i in la:
 		q.append(i)
@@ -228,7 +229,7 @@ HexadecimalLowerCaseChars = ["0","1","2","3","4","5","6","7","8","9","a","b","c"
 HexadecimalUpperCaseChars = ["0","1","2","3","4","5","6","7","8","9","A","B","C","D","E","F"]
 
 #Convert hexadecimal to floating point
-def htd( string, bool=False ):
+def htd( string, bool=False ) -> float: #Hexadecimal to decimal
 	q = 0
 	if bool:
 		tstring = ""

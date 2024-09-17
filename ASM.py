@@ -64,7 +64,7 @@ class WorkingFile():
 		self.AssemblingBinaryNextLine: list = []
 
 		#State of assembling
-		self.RunningState = RunningStates.Initializing
+		self.RunningState: RunningStates = RunningStates.Initializing
 
 	def WorkingFile(self) -> None:                  #Properly initialize class
 		lgn.debug("WorkingFile: Initialized Workingfile class.")

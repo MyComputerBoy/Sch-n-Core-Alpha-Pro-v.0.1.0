@@ -855,14 +855,16 @@ def Assemble( filename: str, dest_name: str ):
 					if vars[6] == "float":
 						full_binary_function[10] = 1
 						vars[8] = None
+		
 		if func_var not in wtf_excp:
-			fh.write( bm.blts( full_binary_function ) + "\n" )
+			fh.write( bm.BinaryListToString( full_binary_function ) + "\n" )
 			bin_ln += 1
 			for i, _ in enumerate( nextLines ):
 				if isinstance( nextLines[i], list ):
-					fh.write( bm.blts( nextLines[i] ) + "\n" )
+					fh.write( bm.BinaryListToString( nextLines[i] ) + "\n" )
 					bin_ln += 1
 		ln_n += 1
+	
 	fh.close()
 	lgn.info("Assembler: Finished assembling.")
 	return 1
