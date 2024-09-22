@@ -41,8 +41,10 @@ class RunningStates(Enum):
 	ExitWithErrorMessage = 5
 
 class WorkingFile():
+	"""ASM.WorkingFile() -> Base class for storing and handling assembly files for Schön Core Alpha v.0.1.0
+	"""
 
-	def __init__(self):			#Bts __init__()
+	def __init__(self):
 		#Constants
 		self._VersionName_: str = "Schön Core Alpha v.0.1.0" #Keep constant!	
 		self._ImportExtension_: str = ".s1"                  #Keep constant!
@@ -79,19 +81,18 @@ class WorkingFile():
 		if self.MainAssembling is None:
 			self.MainAssembling: list[str] = []	
 
-		#Open and read file to assemble
-		FileHandler = open(bf + pf + self.ImportedFileName)
-		self.RawLines = FileHandler.readlines()
-		FileHandler.close()
-
 		#Path of working file
 		self.ImportedFileName: str = filename
 		self.AssembledFileName: str = DestinationName
 
+		#Open and read file to assemble
+		FileHandler = open(bf + pf + self.ImportedFileName + self._ImportExtension_)
+		self.RawLines = FileHandler.readlines()
+		FileHandler.close()
 
 		lgn.debug("ImportFile: Imported file %s." % (bf + pf + self.ImportedFileName))
 	
-	def IncrementGetLine(self) -> str:
+	def IncrementGetLine(self) -> str:				#Get current working line and increment working line number
 		try:
 			if type(self.RawFile) is type(None):
 				lgn.critical("WorkingFile.IncrementGetLine(): Error: File not imported! Import file to get line.")
@@ -103,7 +104,7 @@ class WorkingFile():
 		self.WorkingLineNumber += 1
 		return q
 
-	def TryGetNextLine(self) -> str:
+	def TryGetNextLine(self) -> str:				#Try to get next line
 		try:
 			if type(self.RawFile) is type(None):
 				lgn.debug("WorkingFile.TryGetNextLine(): Error: File not imported! Import file to get line.")
@@ -114,7 +115,7 @@ class WorkingFile():
 			raise IndexError
 		return q
  
-	def GetMetaInfo(self) -> None:
+	def GetMetaInfo(self) -> None:					#Get meta information like user created functions and their scopes
 		
 		_worker_file = WorkingFile()
 		
@@ -172,6 +173,12 @@ class WorkingFile():
         			self.RawLines, self.WorkingLineNumber, 1, InscapeEscapeTypes.Wrapper)
 
 				self.BranchMarks[str(self.IfStatementsEncountered)] = BranchEscapeLine
+	
+	def WriteBinaryOutputToFile(self) -> None:		#Write final assembled bonary to output file
+		FileHandler = open(bf + pf + self.ImportedFileName + self._AssembledExtension_, "w+")
+		for line in self.MainAssembling:
+			FileHandler.write(line + "\n")
+		FileHandler.close()
 				
 class BinaryInstructionInfo(Enum):
 	MainFunction = [0,4]
@@ -665,7 +672,7 @@ def GetInscapeOnLine(Lines: list, InscapeLine: int, InscapeType: InscapeEscapeTy
 		return InscapeEscapeExits.InscapeNotFound
 	return InscapeEscapeExits.UnknownError
 
-def Main(ImportFilename: str, DestinationName: str) -> RunningStates | list[str]:
+def Main(ImportFilename: str, DestinationName: str) -> RunningStates:
 	"""ASM.Main(ImportFilename: str, DestinationName: str) -> Main assembler
 	"""
 
@@ -765,5 +772,6 @@ def Main(ImportFilename: str, DestinationName: str) -> RunningStates | list[str]
 	if worker_file.RunningState != RunningStates.ExitNoError:
 		return worker_file.RunningState
 	
-	#Return final assembled binary
-	return worker_file.MainAssembling
+	#Write assembled file to file
+	worker_file.WriteBinaryOutputToFile()
+	return RunningStates.ExitNoError
