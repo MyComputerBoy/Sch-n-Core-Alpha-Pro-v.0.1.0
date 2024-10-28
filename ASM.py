@@ -193,8 +193,21 @@ class BranchNames(Enum):
 	self = Self
 	Branch = "branch"
 
+	def _value2member_list_map_(self):
+		ValueMemberList = []
+		TemporaryValue2MemberList = list(self._value2member_map_.values())
+		for class_element in TemporaryValue2MemberList:
+			ValueMemberList.append(class_element.value)
+		return ValueMemberList
+
 	def __Has_Value__(self, element: str) -> bool:
 		return element in self._value2member_map_
+
+	def _Indexed_Has_Value_(self, element: str) -> int:
+		for index, class_element in enumerate(self._value2member_list_map_()):
+			if class_element.__Has_Value__(element):
+				return index
+		raise AttributeError
 
 class BranchVariables(Enum):
 	pointer = "pointer"
@@ -247,15 +260,41 @@ class StandardFunctions(Enum):
 	general_io = "io"
 	call_subroutine = "call"
 
+	def _value2member_list_map_(self):
+		ValueMemberList = []
+		TemporaryValue2MemberList = list(self._value2member_map_.values())
+		for class_element in TemporaryValue2MemberList:
+			ValueMemberList.append(class_element.value)
+		return ValueMemberList
+
 	def __Has_Value__(self, element: str) -> bool:
 		return element in self._value2member_map_
+	
+	def _Indexed_Has_Value_(self, element: str) -> int:
+		for index, class_element in enumerate(self._value2member_list_map_()):
+			if class_element.__Has_Value__(element):
+				return index
+		raise AttributeError
 
 class ALUFunctions(Enum):
 	self = Self
 	alu_function = "compute"
 
+	def _value2member_list_map_(self):
+		ValueMemberList = []
+		TemporaryValue2MemberList = list(self._value2member_map_.values())
+		for class_element in TemporaryValue2MemberList:
+			ValueMemberList.append(class_element.value)
+		return ValueMemberList
+
 	def __Has_Value__(self, element: str) -> bool:
 		return element in self._value2member_map_
+	
+	def _Indexed_Has_Value_(self, element: str) -> int:
+		for index, class_element in enumerate(self._value2member_list_map_()):
+			if class_element.__Has_Value__(element):
+				return index
+		raise AttributeError
 
 class AbstractFunctions(Enum):
 	self = Self
@@ -264,8 +303,22 @@ class AbstractFunctions(Enum):
 	_elif = "elif"
 	_pass = "pass"
 	_def = "def"
+
+	def _value2member_list_map_(self):
+		ValueMemberList = []
+		TemporaryValue2MemberList = list(self._value2member_map_.values())
+		for class_element in TemporaryValue2MemberList:
+			ValueMemberList.append(class_element.value)
+		return ValueMemberList
+
 	def __Has_Value__(self, element: str) -> bool:
 		return element in self._value2member_map_
+	
+	def _Indexed_Has_Value_(self, element: str) -> int:
+		for index, class_element in enumerate(self._value2member_list_map_()):
+			if class_element.__Has_Value__(element):
+				return index
+		raise AttributeError
 
 class SpecialCaseFunctions(Enum):
 	self = Self
@@ -274,8 +327,21 @@ class SpecialCaseFunctions(Enum):
 	DefineFunction = "def"
 	EndOfFileIndicator = "eof"
 
+	def _value2member_list_map_(self):
+		ValueMemberList = []
+		TemporaryValue2MemberList = list(self._value2member_map_.values())
+		for class_element in TemporaryValue2MemberList:
+			ValueMemberList.append(class_element.value)
+		return ValueMemberList
+
 	def __Has_Value__(self, element: str) -> bool:
 		return element in self._value2member_map_
+	
+	def _Indexed_Has_Value_(self, element: str) -> int:
+		for index, class_element in enumerate(self._value2member_list_map_()):
+			if class_element.__Has_Value__(element):
+				return index
+		raise AttributeError
 
 class VariableTypes(Enum):
 	self = Self
@@ -287,8 +353,21 @@ class VariableTypes(Enum):
 	Array = "array"
 	List = "list"
 
+	def _value2member_list_map_(self):
+		ValueMemberList = []
+		TemporaryValue2MemberList = list(self._value2member_map_.values())
+		for class_element in TemporaryValue2MemberList:
+			ValueMemberList.append(class_element.value)
+		return ValueMemberList
+
 	def __Has_Value__(self, element: str) -> bool:
 		return element in self._value2member_map_
+	
+	def _Indexed_Has_Value_(self, element: str) -> int:
+		for index, class_element in enumerate(self._value2member_list_map_()):
+			if class_element.__Has_Value__(element):
+				return index
+		raise AttributeError
 
 class FunctionNames(Enum):
 	self = Self
@@ -299,7 +378,7 @@ class FunctionNames(Enum):
 	SpecialCase = SpecialCaseFunctions
 	VariableDeclarationFunctions = VariableTypes
 
-	def _value2member_list_map_(self):
+	def _value2member_list_map_(self) -> list["FunctionNames"]:
 		ValueMemberList = []
 		TemporaryValue2MemberList = list(self._value2member_map_.values())
 		for class_element in TemporaryValue2MemberList:
@@ -312,17 +391,17 @@ class FunctionNames(Enum):
 				return True 
 		return False
 
-	def _Indexed_Has_Value_(self, element: str) -> list:
+	def _Indexed_Has_Value_(self, element: str) -> int:
 		for index, class_element in enumerate(self._value2member_list_map_()):
 			if class_element.__Has_Value__(element):
-				return [True, index]
-		return [False, -1]
+				return index
+		raise AttributeError
 
-	def _Has_Value_To_Element_(self, element_test: int):
+	def _Has_Value_To_Element_(self, element_to_test: int) -> "FunctionNames":
 		for _, class_element in enumerate(self._value2member_list_map_()):
-			if class_element.__Has_Value__(element_test):
-				return [True, class_element]
-		return [False, -1]
+			if class_element.__Has_Value__(element_to_test):
+				return class_element
+		raise AttributeError
 
 class TokenTypes(Enum):
 	String = 0
@@ -457,6 +536,91 @@ class GenericFunctionParameterNames(Enum):
 				return True 
 		return False
 
+class ToFrom(Enum):
+	From = "From"
+	To = "to"
+
+	def _value2member_list_map_(self) -> list[str]:
+		ValueMemberList = []
+		TemporaryValue2MemberList = list(self._value2member_map_.values())
+		for class_element in TemporaryValue2MemberList:
+			ValueMemberList.append(class_element.value)
+		return ValueMemberList
+
+	def __Has_Value__(self, element: str) -> bool:
+		for class_element in self._value2member_list_map_():
+			if class_element.__Has_Value__(element):
+				return True 
+		return False
+
+	def GetIndexFromString(self, element: str) -> int:
+		if not self.__Has_Value__(self, element):
+			raise AttributeError
+		
+		return self._value2member_list_map_.index(element)
+
+class StartEndIndicator(Enum):
+	Start = "{"
+	End = "}"
+
+	def _value2member_list_map_(self) -> list[str]:
+		ValueMemberList = []
+		TemporaryValue2MemberList = list(self._value2member_map_.values())
+		for class_element in TemporaryValue2MemberList:
+			ValueMemberList.append(class_element.value)
+		return ValueMemberList
+
+	def __Has_Value__(self, element: str) -> bool:
+		for class_element in self._value2member_list_map_():
+			if class_element.__Has_Value__(element):
+				return True 
+		return False
+
+	def GetIndexFromString(self, element: str) -> int:
+		if not self.__Has_Value__(self, element):
+			raise AttributeError
+		
+		return self._value2member_list_map_.index(element)
+	
+class RegisterType(Enum):
+	GeneralPurpose = "gpr"
+	ArithmeticLogicRegister = "alu"
+	StackRegister = "stack"
+	ProtectedRegister = "protected"
+
+	def _value2member_list_map_(self) -> list[str]:
+		ValueMemberList = []
+		TemporaryValue2MemberList = list(self._value2member_map_.values())
+		for class_element in TemporaryValue2MemberList:
+			ValueMemberList.append(class_element.value)
+		return ValueMemberList
+
+	def __Has_Value__(self, element: str) -> bool:
+		for class_element in self._value2member_list_map_():
+			if class_element.__Has_Value__(element):
+				return True 
+		return False
+
+	def GetIndexFromString(self, element: str) -> int:
+		if not self.__Has_Value__(self, element):
+			raise AttributeError
+		
+		return self._value2member_list_map_.index(element)
+
+class Number(Enum):
+	def __Has_Value__(self, element: str) -> bool:
+		try:
+			TemporaryValue = float(element)
+			return True
+		except ValueError:
+			return False
+
+	def GetIndexFromString(self, element: str) -> int:
+		if not self.__Has_Value__(self, element):
+			raise AttributeError
+		
+		return self._value2member_list_map_.index(element)
+
 class GenericFunctionVariableTypes(Enum):
     ToFrom = 0
     StartEndIndicator = 1
@@ -474,7 +638,7 @@ FunctionIndecies = [
 	"branch",
 	"interrupt",
 	"call_subroutine",
-	"generel_io",
+	"general_io",
 ]
 
 FunctionParameters = {
@@ -543,36 +707,41 @@ FunctionParameters = {
  
 }
 
-def GetMainTypeAndBinaryVariablesFromTokens(Function: str, Variables: list):
+def GetMainTypeAndBinaryVariablesFromTokens(Function: str, Variables: list): #Returns MainType as FunctionNames element, MainFunctionIndex as int, binary_variables as list[list[int]]
     
-	HasValue, MainFunctionIndex = FunctionNames._Indexed_Has_Value_(FunctionNames.self, Function)
-    
-	binary_variables: list[list[int]] = []
-
+	HasValue, MainType = FunctionNames._Indexed_Has_Value_(FunctionNames.self, Function)
     
 	if not HasValue:	
 		raise NameError
     
-	for variable_index, variable_type in enumerate(FunctionParameters[MainFunctionIndex]):
-		if variable_type == GenericFunctionVariableTypes.ToFrom:
-			pass
-		elif variable_type == GenericFunctionVariableTypes.StartEndIndicator:
-			pass
-		elif variable_type == GenericFunctionVariableTypes.RegisterType:
-			pass
-		elif variable_type == GenericFunctionVariableTypes.Number:
-			pass
-		elif variable_type == GenericFunctionVariableTypes.IndexFromCustomList:
-			pass
-		elif variable_type == GenericFunctionVariableTypes.Copy:
-			pass
-		elif variable_type == GenericFunctionVariableTypes.EndOfVariables:
-			break
-		else:
-			raise TypeError
+	MainFunctionIndex = FunctionNames[MainType]._Indexed_Has_Value_(Function)
 
-def ConvertVariablesToBinaries(Function: str, Variables: list):
-    pass
+	binary_variables = ConvertVariablesToBinaries(MainType, MainFunctionIndex, Variables)
+
+	return MainType, MainFunctionIndex, binary_variables
+
+def ConvertVariablesToBinaries(MainType: "FunctionNames", MainFunctionIndex: str, Variables: list):
+    
+	binary_variables: list[list[int]] = []
+
+	for variable_index, variable_type in enumerate(FunctionParameters[MainType][MainFunctionIndex]):
+		match variable_type:
+			case GenericFunctionVariableTypes.ToFrom:
+				break
+			case GenericFunctionVariableTypes.StartEndIndicator:
+				break
+			case GenericFunctionVariableTypes.RegisterType:
+				break
+			case GenericFunctionVariableTypes.Number:
+				break
+			case GenericFunctionVariableTypes.IndexFromCustomList:
+				break
+			case GenericFunctionVariableTypes.Copy:
+				break
+			case GenericFunctionVariableTypes.EndOfVariables:
+				break
+			case _:
+				raise TypeError
 
 def GetTokens(Line: str) -> list:
 	
@@ -705,12 +874,14 @@ def Main(ImportFilename: str, DestinationName: str) -> RunningStates:
 		Variables = tokens
 
 		#Handle function number
-		ExpectHandlingFunctionNumber = False
 		try:
-			worker_file.WorkingBinaryLineNumber[0:4] = bm.dtb(FunctionIndecies.index(Function), 4)
-		except ValueError:
+			MainType, MainFunctionIndex, binary_variables = GetMainTypeAndBinaryVariablesFromTokens(Function, Variables)
+			ExpectHandlingFunctionNumber = False
+		except TypeError:
 			ExpectHandlingFunctionNumber = True
-
+		except NameError:
+			ExpectHandlingFunctionNumber = True
+	
 		#Handle functions
 		if (FunctionNames.__Has_Value__(FunctionNames.self, element=Function) == False and
 	  		Function in worker_file.UserFunctions):
