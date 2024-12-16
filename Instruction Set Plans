@@ -1,0 +1,44 @@
+Schön Core Alpha Pro v.0.1.0 Instruction Set Plans/documentation:
+
+!NOTE
+This is WIP, so this will probably change and there still needs to be made more in-depth details about every function
+
+A list of the main functions:
+-ROM
+-RAM
+-Register
+-Stack
+-Branch (conditional inculded)
+-Interrupt
+-Call Function
+-Return Function
+-GPIO
+
+A deeper explanation of the different functions:
+-ROM:  (This is read only)
+  -At immediate
+  -At address at immediate
+-RAM:  (This is both readable and writable, but the same ways it can read)
+  -At immediate
+  -At address at immediate
+-Register: 
+  -Swap
+  -Clone
+-Stack:
+  -Push up
+  -Pop up
+  -Set pointer to register
+  -Push down
+  -Pop down
+  -Get pointer to register
+-Branch:
+  -Branch
+  -RAR
+  -Conditional
+  -Conditional RAR
+-Interrupt:
+-Call Function
+-Return from Function
+-GPIO:  (This is both readable and writable, but the same ways it can read)
+  -At immediate
+  -At address at immediate
