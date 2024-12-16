@@ -619,7 +619,7 @@ class Number(Enum):
 		if not self.__Has_Value__(self, element):
 			raise AttributeError
 		
-		return self._value2member_list_map_.index(element)
+		return float(element)
 
 class GenericFunctionVariableTypes(Enum):
     ToFrom = 0
