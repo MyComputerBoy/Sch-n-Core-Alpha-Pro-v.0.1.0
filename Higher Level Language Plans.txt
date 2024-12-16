@@ -1,0 +1,19 @@
+Schön Core Alpha Pro v.0.1.0 Higher Level Language plans:
+
+!NOTE
+This is still Work In Progress and there will be changes
+
+Functions:
+-Declare
+-Save
+-Register
+-Stack
+-IO
+-For loop
+-Compute
+-Def
+-Mark
+-Else
+-Elif
+
+There should be more explanations about the functions and how to convert them to assembly
