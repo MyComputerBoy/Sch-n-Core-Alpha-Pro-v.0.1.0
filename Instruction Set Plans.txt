@@ -3,6 +3,8 @@ Schön Core Alpha Pro v.0.1.0 Instruction Set Plans/documentation:
 !NOTE
 This is WIP, so this will probably change and there still needs to be made more in-depth details about every function
 
+Schön Core Alpha Pro v.0.1.0 Assembly documentation
+
 A list of the main functions:
 -ROM
 -RAM
@@ -42,3 +44,6 @@ A deeper explanation of the different functions:
 -GPIO:  (This is both readable and writable, but the same ways it can read)
   -At immediate
   -At address at immediate
+
+!NOTE
+More details will be added and higher level language details will also be added here
