@@ -1,14 +1,19 @@
 # Schön Core Alpha Pro v.0.1.0
  Schön Core Alpha Pro v.0.1.0 Python Edition
+ Second Refactoring
 
 ------------------------------
  It is still work in progress!
 ------------------------------
  
- My 32 bit single core CPU with built in support for different types of variables 
- (such as float, array and chars, full list will be in documentation when it is created).
+This is my second refactoring after getting too complicated with the other repository, but with the lessons learned from it <3
+So right now it's still very much in the early stages.
 
- I'm refactoring the whole project for making everything more managable, readable and upgradable
- (In the refactoring branch)
- I heavily depend on python enums for making sure everything is easily readable and debug friendly
-(Please don't look too much at the main branch as it is old and basically legacy code xD)
+1: Main plan for the forseen future:
+2: Plan ISA (Instruction set architecture)
+3: Plan 'high' level structure of the CPU (General idea about the structure)
+4: Plan Test Bench for the CPU (This includes more detailed info about implementation of the ISA)
+5: Create Test Bench
+6: Implement components (While testing according to Test Bench)
+
+Then I will probably look at the Assembler and Compiler afterwards <3
