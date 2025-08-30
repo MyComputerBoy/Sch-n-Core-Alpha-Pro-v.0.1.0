@@ -17,17 +17,17 @@ class AssemblerBaseClass():
 		
 		self.ClassName: str = ClassName
 
-		self.__ListOfNames__: list = []
+		self.__ListOfNames__: list[str] = []
 		self.__ListOfCallableFunctions__: list = []
 
-		self.__ListOfChildren__: list["AssemblerBaseClass"]|None = []
+		self.__ListOfChildren__: list["AssemblerBaseClass"] = []
 
 		self.BinaryBaseMap: list[int] = []
 		self.BinaryAlternateMappings: list[list[int]] = [] #Change binary mappings depending on variables
 
 	def SetNamesFromList(
 		self: Self,
-		ListOfNames: list
+		ListOfNames: list[str]
 	) -> bool:
 		
 		self.__ListOfNames__ = ListOfNames
@@ -50,7 +50,7 @@ class AssemblerBaseClass():
 		self: Self
 	) -> bool:
 		
-		self.__ListOfChildren__ = [None for _ in self.__ListOfNames__]
+		self.__ListOfChildren__ = [AssemblerBaseClass("Temporary%s" % (i)) for i in self.__ListOfNames__]
 
 		return True
 
@@ -58,7 +58,9 @@ class AssemblerBaseClass():
 		self: Self,
 	) -> bool:
 		
-		self.BinaryBaseMap = [None for _ in self.__ListOfNames__]
+		self.BinaryBaseMap = [0 for _ in self.__ListOfNames__]
+
+		return True
 
 	def SetChilden(
 		self: Self,
@@ -164,7 +166,7 @@ class AssemblerBaseClass():
 			if AlternateMappingIndex == -1:
 				return self.BinaryBaseMap[IndexToGetBinaryFrom]
 			else:
-				return self.BinaryAlternateMappings[IndexToGetBinaryFrom]
+				return self.BinaryAlternateMappings[AlternateMappingIndex][IndexToGetBinaryFrom]
 		except ValueError:
 			raise ValueError("AssemblerBaseClass(%s) does not contain binary mapping index %s" % (self.ClassName, IndexToGetBinaryFrom))
 
@@ -199,11 +201,11 @@ class AssemblerBaseClass():
 	
 	def SetNamesAndMappingFrom2DList(
 		self: Self,
-		ListOfNamesNadBinaryMappings: list[list]
+		ListOfNamesAndBinaryMappings: list[list]
 	) -> bool:
 		
-		DidSet: bool = self.SetNamesFromList(ListOfNamesNadBinaryMappings[0])
-		DidSet = DidSet and self.SetBinaryMapping(ListOfNamesNadBinaryMappings[1])
+		DidSet: bool = self.SetNamesFromList(ListOfNamesAndBinaryMappings[0])
+		DidSet = DidSet and self.SetBinaryMapping(ListOfNamesAndBinaryMappings[1])
 
 		if not DidSet:
 			raise Exception("Could not set appropriate lists.")
