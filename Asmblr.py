@@ -12,71 +12,108 @@ class Symbols():
 
 	def __init__(self: Self) -> None:
 		#Base container for all symbols, static and dynamic
+		#There's a group for indexable groups and a group for unindexable symbols
 		#So, SymbolsGroups is a dict containing every category, which is also a dict
 		#And the categories has lists of all the elements that you wanna use
-		self.SymbolGroups: dict[str, dict[str, list[str]]] = {}
+		#Indexable elements have predefinable elements, while unindexable elements are more of a concept, like ints, strings etc.
+		self.IndexableSymbolGroups: dict[str, dict[str, list[str]]] = {}
+		self.UnindexableSymbolsGroups: dict[str, dict[str, list[str]]] = {}
 
 		# DidCreatePredefinedGroups: bool = self.CreatePredefinedGroups()
 		# if not DidCreatePredefinedGroups:
 		# 	raise Exception("Could not create predefined symbols.")
 
-	def __setitem__(self: Self, GroupName: str, CategoryName: str, Value: str) -> None:
-		self.SymbolGroups[GroupName][CategoryName].append(Value)
+	def __setitem__(self: Self, IsIndexable: bool, GroupName: str, CategoryName: str, Value: str) -> None:
+		if IsIndexable:
+			self.IndexableSymbolGroups[GroupName][CategoryName].append(Value)
+		else:
+			self.UnindexableSymbolsGroups[GroupName][CategoryName].append(Value)
 	
-	def __getitem__(self: Self, GroupName: str, CategoryName: str, Index: int) -> str:
-		return self.SymbolGroups[GroupName][CategoryName][Index]
+	def __getitem__(self: Self, IsIndexable: bool, GroupName: str, CategoryName: str, Index: int) -> str:
+		if IsIndexable:
+			return self.IndexableSymbolGroups[GroupName][CategoryName][Index]
+		else:
+			return self.UnindexableSymbolsGroups[GroupName][CategoryName][Index]
 	
-	def CreatePredefinedGroups(self: Self, GroupName: str, CategoryNames: list[str], PopulationList: list[list[str]]) -> bool:
+	def CreatePredefinedGroups(self: Self, IsIndexable: bool, GroupName: str, CategoryNames: list[str], PopulationList: list[list[str]]) -> bool:
 		#Creating the group
-		DidCreateGroupCategory: bool = self.CreateSymbolsGroup(GroupName)
+		DidCreateGroupCategory: bool = self.CreateSymbolsGroup(IsIndexable, GroupName)
 		if not DidCreateGroupCategory:
 			raise Exception("Could not create $s group." % (GroupName))
 		
 		#Creating the categories
 		for Category in CategoryNames:
-			DidCreateGroupCategory: bool = self.CreateSymbolGroupsCategory(GroupName, Category)
+			DidCreateGroupCategory: bool = self.CreateSymbolGroupsCategory(IsIndexable, GroupName, Category)
 			if not DidCreateGroupCategory:
 				raise Exception("Could not create %s[%s] category." % (GroupName, Category))
 		
 		#Populating the categories in the group
 		PopulationIndex: int = 0
 		for PopulationListElement in PopulationList:
-			DidPopulateCategory: bool = self.PopulateWholeCategoryFromList(GroupName, CategoryNames[PopulationIndex], PopulationListElement)
+			DidPopulateCategory: bool = self.PopulateWholeCategoryFromList(IsIndexable, GroupName, CategoryNames[PopulationIndex], PopulationListElement)
 			if not DidPopulateCategory:
 				raise Exception("Could not populate %s[$s] category." % (GroupName, CategoryNames[PopulationIndex]))
 			PopulationIndex += 1
 
 		return True
 
-	def PopulateWholeCategoryFromList(self: Self, GroupName: str, CategoryName: str, PopulatedCategory: list[str]) -> bool:
+	def PopulateWholeCategoryFromList(self: Self, IsIndexable: bool, GroupName: str, CategoryName: str, PopulatedCategory: list[str]) -> bool:
 		try:
-			self.SymbolGroups[GroupName][CategoryName] = PopulatedCategory
+			if IsIndexable:
+				self.IndexableSymbolGroups[GroupName][CategoryName] = PopulatedCategory
+			else:
+				self.UnindexableSymbolsGroups[GroupName][CategoryName] = PopulatedCategory
 
 			return True
 		except Exception:
 			return False
 
-	def CreateSymbolsGroup(self: Self, GroupName: str) -> bool:
+	def CreateSymbolsGroup(self: Self, IsIndexable: bool, GroupName: str) -> bool:
 		try:
-			self.SymbolGroups[GroupName] = {}
+			if IsIndexable:
+				self.IndexableSymbolGroups[GroupName] = {}
+			else:
+				self.UnindexableSymbolsGroups[GroupName] = {}
 			return True
 		except Exception:
 			return False
 	
-	def DeleteSymbolsGroup(self: Self, GroupName: str) -> bool:
+	def DeleteSymbolsGroup(self: Self, IsIndexable: bool, GroupName: str) -> bool:
 		try:
-			del self.SymbolGroups[GroupName]
+			if IsIndexable:
+				del self.IndexableSymbolGroups[GroupName]
+			else:
+				del self.UnindexableSymbolsGroups[GroupName]
 			return True
 		except KeyError:
 			return False
 	
-	def CreateSymbolGroupsCategory(self: Self, GroupName: str, CategoryName: str) -> bool:
+	def CreateSymbolGroupsCategory(self: Self, IsIndexable: bool, GroupName: str, CategoryName: str) -> bool:
 		try:
-			self.SymbolGroups[GroupName][CategoryName] = []
+			if IsIndexable:
+				self.IndexableSymbolGroups[GroupName][CategoryName] = []
+			else:
+				self.UnindexableSymbolsGroups[GroupName][CategoryName] = []
 
 			return True
 		except Exception:
 			return False
+	
+	#Format: GroupName, CategoryName, ListIndex (converted to str)
+	def HasElement(self: Self, IsIndexable: bool, ElementToCheck: str) -> list[str]:
+
+		if IsIndexable:
+			GroupToLoopOver = self.IndexableSymbolGroups
+		else:
+			GroupToLoopOver = self.UnindexableSymbolsGroups
+
+		for GroupToCheck in GroupToLoopOver:
+			for CategoryToCheck in GroupToCheck:
+				for Element in CategoryToCheck:
+					if Element == ElementToCheck:
+						return [GroupToCheck, CategoryToCheck, str(CategoryToCheck.index(Element))]
+
+		raise IndexError
 
 class Assembler: #Main assembler class to assemble
 	def __init__(self):
