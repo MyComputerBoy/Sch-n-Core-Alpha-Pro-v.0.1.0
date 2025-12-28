@@ -111,6 +111,19 @@ class SchonCoreAlphaRegister():
 	def __getattribute__(self, Index: str) -> SchonCoreAlphaBus:
 		return self._Registers[int(Index)]
 
+class SchonCoreAlphaROM():
+	def __init__(
+			self: Self,
+			ROMToLoad: list["SchonCoreAlphaBus"],
+		) -> None:
+
+		self.__ROM__: list["SchonCoreAlphaBus"] = ROMToLoad
+		
+		self.__ROMSize__: int = len(self.__ROM__)
+	
+	def __getitem__(self: Self, Index: int) -> "SchonCoreAlphaBus":
+		return self.__ROM__[Index]
+
 class ALUControlInputNames(Enum):
 	ProgramCounterIncrement = 0
 	Increment = 1
@@ -162,84 +175,6 @@ class EmulatorArithmeticLogicUnit():
 		return True
 
 class Emulator():
-	def __init__(
-		self: Self,
-		NameOfEmulator: str,
-		SizeOfEmulatedRAMInWords: int,
-		SizeOfEmulatorROMInWords: int,
-	) -> None:
-		
-		self.NAME = NameOfEmulator
-
-		self._MainBus: "SchonCoreAlphaBus" = SchonCoreAlphaBus(GLOBALBUSWIDTH, "MainEmulatorBus")
-		self._GPIOBus: "SchonCoreAlphaBus" = SchonCoreAlphaBus(GLOBALBUSWIDTH, "EmulatorGPIOBus")
-
-		self.__ROMSIZE__: int = SizeOfEmulatorROMInWords
-		DidResetROM: bool = self.ResetROM()
-
-		if not DidResetROM:
-			raise SystemError("Could not reset main emulator ROM.")
-
-		#Based on the instruction set, there are room for 16 registers per type of register, meaning a combined 64 registers available
-		self.__AMOUNTOFREGISTERSPERREGISTERTYPE__: int = 16
-		self.__NAMESOFREGISTERTYPES__: list[str] = [
-			"gpr",
-			"alr",
-			"str",
-			"spr"
-		]
-
-		self.Registers: dict[str, "SchonCoreAlphaRegister"] = {}
-
-		DidResetRegisters: bool = self.ResetRegisters()
-		if not DidResetRegisters:
-			raise SystemError("Could not reset main emulator registers.")
-
-		#NOTE!
-		#The CPU does not address to individual bytes, but to words, meaning accessing individual bytes is not trivial
-		#Since this is a 32 bit CPU, the standard 2**32 words of ram is possible, hence 16GB worth of ram possible
-
-		self.__RAMSIZE__: int = SizeOfEmulatedRAMInWords
-		DidResetRAM: bool = self.ResetRAM()
-		if not DidResetRAM:
-			raise SystemError("Could not reset main emulator RAM.")
-	
-	def ResetROM(
-		self: Self
-	) -> bool:
-		
-		self.__ROM = SchonCoreAlphaRegister("MainEmulatorROM", self.__ROMSIZE__)
-
-		return True
-	
-	def ResetRAM(
-		self: Self
-	) -> bool:
-		
-		self.RAM = SchonCoreAlphaRegister("MainEmulatorRAM", self.__RAMSIZE__)
-
-		return True
-	
-	def ResetRegisters(
-		self: Self
-	) -> bool:
-		
-		for NameOfRegister in self.__NAMESOFREGISTERTYPES__:
-			self.Registers[NameOfRegister] = SchonCoreAlphaRegister(NameOfRegister, self.__AMOUNTOFREGISTERSPERREGISTERTYPE__)
-		
-		return True
-	
-	def LoadFileToROM(
-		self: Self,
-		PathToROMFile: str
-	) -> bool:
-		
-		FileHandler = open(PathToROMFile, "r")
-		WordsRead = FileHandler.readlines()
-		FileHandler.close()
-
-		for i, Word in enumerate(WordsRead):
-			self.__ROM[i] = int(Word)
-		
-		return True
-	
+	def __init__(self: Self) -> None:
+		self.__CORETYPE__: str = "Schon Core Alpha Pro"
+		self.__VERSION__: str = "v.0.1.0"
